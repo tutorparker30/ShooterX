@@ -2,29 +2,66 @@
 
 #include "SXGameInstance.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "SXUnrealObject.h"
 
 USXGameInstance::USXGameInstance()
 {
-	UE_LOG(LogTemp, Log, TEXT("USXGameInstance::USXGameInstance() has been called."));
+	Name = TEXT("SXGameInstance's Class Default Object");
 }
 
 void USXGameInstance::Init()
 {
 	Super::Init();
 
-	UE_LOG(LogTemp, Log, TEXT("USXGameInstance::Init() has been called."));
+	/*
+	UClass* CompiletimeClassInfo = StaticClass();
+	UClass* RuntimeClassInfo = GetClass();
 
-	UKismetSystemLibrary::PrintString(GetWorld(), TEXT("USXGameInstance::Init() has been called."));
-		// UKismetSystemLibrary::PrintString() 함수의 첫 매개변수 이름은 "WorldContextObject"
-		// Context란, 문맥상 ~될만한거 라고 생각하면 좋음. 여기서는 "월드 개체를 만들만한 거"라고 해석.
-		// 따라서 GetWorld()를 통해서 진짜 World 개체를 넘겨줘도 되지만
-		// this(USGameInstance 개체)를 전달해서 this가 속한 월드 개체를 구하게끔 해도된다는 뜻.
+	checkf(CompiletimeClassInfo != RuntimeClassInfo, TEXT("CompiletimeClassInfo != RuntimeClassInfo"));
+
+	UE_LOG(LogTemp, Log, TEXT("CompiletimeClassInfo->GetName(): %s"), *CompiletimeClassInfo->GetName());
+	UE_LOG(LogTemp, Log, TEXT("RuntimeClassInfo->GetName(): %s"), *RuntimeClassInfo->GetName());
+
+	Name = TEXT("SXGameInstance's Object");
+
+	UE_LOG(LogTemp, Log, TEXT("USXGameInstance::Name %s"), *(RuntimeClassInfo->GetDefaultObject<USXGameInstance>()->Name));
+	UE_LOG(LogTemp, Log, TEXT("USXGameInstance::Name %s"), *Name);
+	*/
+
+	USXUnrealObject* USXObject01 = NewObject<USXUnrealObject>();
+		// 언리얼은 이런식으로 new 키워드를 안쓰고 NewObject<>() API를 사용해야 함.
+
+	UE_LOG(LogTemp, Log, TEXT("USXObject01's Name: %s"), *USXObject01->GetObjectName());
+		// 우리가 정의한 Getter()
+
+	FProperty* NameProperty = USXUnrealObject::StaticClass()->FindPropertyByName(TEXT("Name"));
+	FString CompiletimeUSObjectName;
+	if (nullptr != NameProperty)
+	{
+		NameProperty->GetValue_InContainer(USXObject01, &CompiletimeUSObjectName);
+		UE_LOG(LogTemp, Log, TEXT("CompiletimeUSObjectName: %s"), *CompiletimeUSObjectName);
+			// 리플렉션 시스템을 활용
+	}
+
+	USXObject01->HelloUnreal();
+		// 멤버 함수 호출.
+
+	UFunction* HelloUnrealFunction = USXObject01->GetClass()->FindFunctionByName(TEXT("HelloUnreal"));
+	if (nullptr != HelloUnrealFunction)
+	{
+		USXObject01->ProcessEvent(HelloUnrealFunction, nullptr);
+			// 리플렉션 시스템을 활용
+	}
 }
 
 void USXGameInstance::Shutdown()
 {
 	Super::Shutdown();
 
+	/*
 	UE_LOG(LogTemp, Log, TEXT("USXGameInstance::Shutdown() has been called."));
+
+	UKismetSystemLibrary::PrintString(GetWorld(), TEXT("USXGameInstance::Shutdown() has been called."));
+	*/
 }
 
