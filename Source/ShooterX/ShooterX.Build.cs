@@ -16,6 +16,9 @@ public class ShooterX : ModuleRules
 				// Json Modules
 				"Json", "JsonUtilities",
 
+				// Niagara
+				"Niagara",
+
 			}
 		);
 
