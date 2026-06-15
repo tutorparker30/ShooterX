@@ -14,4 +14,10 @@ class SHOOTERX_API ASXPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
+public:
+	ASXPlayerController();
+
+protected:
+	virtual void BeginPlay() override;
+
 };
