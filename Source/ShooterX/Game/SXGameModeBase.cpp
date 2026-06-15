@@ -9,4 +9,12 @@ ASXGameModeBase::ASXGameModeBase()
 {
 	PlayerControllerClass = ASXPlayerController::StaticClass();
 	DefaultPawnClass = ASXPlayerPawn::StaticClass();
+
+	/*
+	static ConstructorHelpers::FClassFinder<ASXPlayerCharacter> DefaultPlayerCharacterClassRef(TEXT("오브젝트패스"));
+	if (DefaultPlayerCharacterClassRef.Class)
+	{
+		DefaultPawnClass = DefaultPlayerCharacterClassRef.Class;
+	}
+	*/
 }
