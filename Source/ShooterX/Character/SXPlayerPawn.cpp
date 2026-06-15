@@ -24,11 +24,14 @@ ASXPlayerPawn::ASXPlayerPawn()
 	FVector PivotPosition(0.f, 0.f, -CharacterHalfHeight);
 	FRotator PivotRotation(0.f, -90.f, 0.f);
 	SkeletalMeshComponent->SetRelativeLocationAndRotation(PivotPosition, PivotRotation);
-	//static ConstructorHelpers::FObjectFinder<USkeletalMesh> SkeletalMeshAsset(TEXT("오브젝트 패스"));
-	//if (true == SkeletalMeshAsset.Succeeded())
-	//{
-	//    SkeletalMeshComponent->SetSkeletalMesh(SkeletalMeshAsset.Object);
-	//}
+	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimInstanceClassInfo(TEXT("/Script/Engine.AnimBlueprint'/Game/ShooterX/Animation/AnimationBlueprint/ABP_PlayerPawn.ABP_PlayerPawn_C'"));
+	// 위 오브젝트 패스 대신, 작은 따옴표 안의 내용만으로도 가능함.
+	//static ConstructorHelpers::FClassFinder<UAnimInstance> AnimInstanceClassInfo(TEXT("'/Game/ShooterX/Animation/AnimationBlueprint/ABP_PlayerPawn.ABP_PlayerPawn_C'")); 
+	if (AnimInstanceClassInfo.Succeeded() == true)
+	{
+		SkeletalMeshComponent->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+		SkeletalMeshComponent->SetAnimInstanceClass(AnimInstanceClassInfo.Class);
+	}
 
 	SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
 	SpringArmComponent->SetupAttachment(RootComponent);
@@ -48,6 +51,11 @@ void ASXPlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 
 	PlayerInputComponent->BindAxis(TEXT("FrontRear"), this, &ThisClass::FrontRear);
 	PlayerInputComponent->BindAxis(TEXT("LeftRight"), this, &ThisClass::LeftRight);
+}
+
+void ASXPlayerPawn::BeginPlay()
+{
+	Super::BeginPlay();
 }
 
 void ASXPlayerPawn::FrontRear(float InAxisValue)
