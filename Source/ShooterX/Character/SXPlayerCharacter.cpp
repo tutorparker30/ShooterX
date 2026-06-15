@@ -8,6 +8,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Input/SXInputConfig.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 ASXPlayerCharacter::ASXPlayerCharacter()
 {
@@ -20,6 +21,25 @@ ASXPlayerCharacter::ASXPlayerCharacter()
 
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
 	CameraComponent->SetupAttachment(SpringArmComponent);
+
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationRoll = false;
+
+	SpringArmComponent->bUsePawnControlRotation = true;
+	SpringArmComponent->SetRelativeRotation(FRotator::ZeroRotator);
+		// ControlRotation이 Pawn의 회전과 동기화되고,
+		// Pawn의 회전이 SpringArm의 회전 동기화. 이로 인해 SetRelativeRotation()이 무의미.
+
+	SpringArmComponent->bInheritPitch = true;
+	SpringArmComponent->bInheritYaw = true;
+	SpringArmComponent->bInheritRoll = false;
+
+	SpringArmComponent->bDoCollisionTest = true;
+
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 360.f, 0.f);
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	GetCharacterMovement()->bUseControllerDesiredRotation = false;
 }
 
 void ASXPlayerCharacter::BeginPlay()
@@ -53,10 +73,14 @@ void ASXPlayerCharacter::InputMove(const FInputActionValue& InValue)
 {
 	FVector2D MovementVector = InValue.Get<FVector2D>();
 
-	AddMovementInput(GetActorForwardVector(), MovementVector.X);
-	AddMovementInput(GetActorRightVector(), MovementVector.Y);
+	const FRotator ControlRotation = GetController()->GetControlRotation();
+	const FRotator ControlRotationYaw(0.f, ControlRotation.Yaw, 0.f);
 
-	//UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("X: %.3f, Y: %.3f"), MovementVector.X, MovementVector.Y));
+	const FVector ForwardVector = FRotationMatrix(ControlRotationYaw).GetUnitAxis(EAxis::X);
+	const FVector RightVector = FRotationMatrix(ControlRotationYaw).GetUnitAxis(EAxis::Y);
+
+	AddMovementInput(ForwardVector, MovementVector.X);
+	AddMovementInput(RightVector, MovementVector.Y);
 }
 
 void ASXPlayerCharacter::InputLook(const FInputActionValue& InValue)
