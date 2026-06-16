@@ -9,6 +9,8 @@
 class ASXCharacterBase;
 class UCharacterMovementComponent;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCheckHit);
+
 /**
  *
  */
@@ -21,6 +23,13 @@ public:
 	virtual void NativeInitializeAnimation() override;
 
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
+
+private:
+	UFUNCTION()
+	void AnimNotify_CheckHit();
+
+public:
+	FOnCheckHit OnCheckHit;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)

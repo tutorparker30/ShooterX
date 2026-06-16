@@ -29,3 +29,11 @@ void USXAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bIsFalling = OwnerCharacterMovement->IsFalling();
 	}
 }
+
+void USXAnimInstance::AnimNotify_CheckHit()
+{
+	if (OnCheckHit.IsBound() == true)
+	{
+		OnCheckHit.Broadcast();
+	}
+}

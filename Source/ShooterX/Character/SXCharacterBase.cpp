@@ -4,6 +4,8 @@
 #include "Character/SXCharacterBase.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Animation/SXAnimInstance.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 ASXCharacterBase::ASXCharacterBase()
 {
@@ -21,3 +23,14 @@ ASXCharacterBase::ASXCharacterBase()
 	GetCharacterMovement()->MaxWalkSpeed = 600.f;
 	GetCharacterMovement()->JumpZVelocity = 700.f;
 }
+
+void ASXCharacterBase::BeginPlay()
+{
+	Super::BeginPlay();
+}
+
+void ASXCharacterBase::HandleOnCheckHit()
+{
+	UKismetSystemLibrary::PrintString(this, TEXT("HandleOnCheckHit()"));
+}
+
