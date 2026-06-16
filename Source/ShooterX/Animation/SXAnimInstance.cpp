@@ -5,6 +5,7 @@
 #include "Character/SXCharacterBase.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Character/SXNonPlayerCharacter.h"
 
 void USXAnimInstance::NativeInitializeAnimation()
 {
@@ -28,6 +29,11 @@ void USXAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bShouldMove = (KINDA_SMALL_NUMBER < GroundSpeed) && (bIsAccelerationNearlyZero == false);
 		bIsFalling = OwnerCharacterMovement->IsFalling();
 		bIsDead = OwnerCharacter->IsDead();
+
+		if (ASXNonPlayerCharacter* OwnerNPC = Cast<ASXNonPlayerCharacter>(OwnerCharacter))
+		{
+			bShouldMove = KINDA_SMALL_NUMBER < GroundSpeed;
+		}
 	}
 }
 

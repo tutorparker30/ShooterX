@@ -21,6 +21,9 @@ public class ShooterX : ModuleRules
 
 				// Niagara
 				"Niagara",
+
+				// AI
+				"AIModule", "NavigationSystem",
 			}
 		);
 
