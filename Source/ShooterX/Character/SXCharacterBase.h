@@ -37,6 +37,8 @@ public:
 	UFUNCTION()
 	virtual void EndAttack(UAnimMontage* InMontage, bool bInterruped);
 
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+
 public:
 	static int32 ShowAttackMeleeDebug;
 
@@ -61,6 +63,35 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float AttackMeleeRadius = 20.f;
+
+#pragma endregion
+
+#pragma region HP
+
+public:
+	float GetMaxHP() const { return MaxHP; }
+
+	float GetCurrentHP() const { return CurrentHP; }
+
+	void SetMaxHP(float InMaxHP) { MaxHP = InMaxHP; }
+
+	void SetCurrentHP(float InCurrentHP) { CurrentHP = InCurrentHP; }
+
+	bool IsDead() const { return bIsDead; }
+
+protected:
+	UFUNCTION()
+	virtual void HandleOnPostCharacterDead();
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float MaxHP = 100.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float CurrentHP = 100.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	uint8 bIsDead : 1;
 
 #pragma endregion
 

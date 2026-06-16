@@ -10,6 +10,7 @@ class USceneComponent;
 class UBoxComponent;
 class UStaticMeshComponent;
 class URotatingMovementComponent;
+class UNiagaraComponent;
 
 UCLASS()
 class SHOOTERX_API ASXHealthPack : public AActor
@@ -22,6 +23,13 @@ public:
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaSeconds) override;
+
+	UFUNCTION()
+	void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepHitResult);
+
+	UFUNCTION()
+	void OnEffectFinish(UNiagaraComponent* NiagaraComponent);
 
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess), Category = "ShooterX|SXHealthPack")
@@ -51,5 +59,8 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "ShooterX|SXHealthPack")
 	float RotationSpeed = 300.f;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UNiagaraComponent> NiagaraComponent;
 
 };

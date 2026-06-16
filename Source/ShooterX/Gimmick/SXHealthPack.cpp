@@ -6,6 +6,8 @@
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/RotatingMovementComponent.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 
 ASXHealthPack::ASXHealthPack()
 	: HealAmount(100.f)
@@ -19,6 +21,8 @@ ASXHealthPack::ASXHealthPack()
 	BoxComponent->SetupAttachment(GetRootComponent());
 	BoxComponent->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
 	BoxComponent->SetRelativeScale3D(FVector(0.6f, 0.8f, 0.8f));
+	BoxComponent->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnOverlapBegin);
+	BoxComponent->SetCollisionProfileName(FName(TEXT("SXGimmick")));
 
 	BodyStaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BodyStaticMeshComponent"));
 	BodyStaticMeshComponent->SetupAttachment(GetRootComponent());
@@ -32,6 +36,10 @@ ASXHealthPack::ASXHealthPack()
 	}
 
 	RotatingMovementComponent = CreateDefaultSubobject<URotatingMovementComponent>(TEXT("RotatingMovementComponent"));
+
+	NiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("NiagaraComponent"));
+	NiagaraComponent->SetupAttachment(GetRootComponent());
+	NiagaraComponent->SetAutoActivate(false);
 }
 
 void ASXHealthPack::BeginPlay()
@@ -53,4 +61,19 @@ void ASXHealthPack::Tick(float DeltaSeconds)
 	FVector NewLocation = StartLocation;
 	NewLocation.Z += ZOffset;
 	SetActorLocation(NewLocation);
+}
+
+void ASXHealthPack::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepHitResult)
+{
+	NiagaraComponent->OnSystemFinished.AddDynamic(this, &ThisClass::OnEffectFinish);
+
+	NiagaraComponent->Activate(true);
+	BodyStaticMeshComponent->SetHiddenInGame(true);
+	SetActorEnableCollision(false);
+}
+
+void ASXHealthPack::OnEffectFinish(UNiagaraComponent* FinishedNiagaraComponent)
+{
+	Destroy();
 }

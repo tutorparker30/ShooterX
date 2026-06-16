@@ -27,6 +27,7 @@ void USXAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bool bIsAccelerationNearlyZero = FMath::IsNearlyZero(GroundAcceleration);
 		bShouldMove = (KINDA_SMALL_NUMBER < GroundSpeed) && (bIsAccelerationNearlyZero == false);
 		bIsFalling = OwnerCharacterMovement->IsFalling();
+		bIsDead = OwnerCharacter->IsDead();
 	}
 }
 
@@ -35,5 +36,13 @@ void USXAnimInstance::AnimNotify_CheckHit()
 	if (OnCheckHit.IsBound() == true)
 	{
 		OnCheckHit.Broadcast();
+	}
+}
+
+void USXAnimInstance::AnimNotify_PostDead()
+{
+	if (OnPostDead.IsBound() == true)
+	{
+		OnPostDead.Broadcast();
 	}
 }

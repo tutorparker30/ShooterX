@@ -19,6 +19,8 @@ public class ShooterX : ModuleRules
 				// Input
 				"EnhancedInput",
 
+				// Niagara
+				"Niagara",
 			}
 		);
 

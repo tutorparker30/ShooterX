@@ -10,6 +10,7 @@ class ASXCharacterBase;
 class UCharacterMovementComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCheckHit);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPostDead);
 
 /**
  *
@@ -28,8 +29,13 @@ private:
 	UFUNCTION()
 	void AnimNotify_CheckHit();
 
+	UFUNCTION()
+	void AnimNotify_PostDead();
+
 public:
 	FOnCheckHit OnCheckHit;
+
+	FOnPostDead OnPostDead;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -49,5 +55,8 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	uint8 bIsFalling : 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	uint8 bIsDead : 1;
 
 };
