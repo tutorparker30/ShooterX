@@ -19,6 +19,7 @@ ASXCharacterBase::ASXCharacterBase()
 	FVector PivotPosition(0.f, 0.f, -CharacterHalfHeight);
 	FRotator PivotRotation(0.f, -90.f, 0.f);
 	GetMesh()->SetRelativeLocationAndRotation(PivotPosition, PivotRotation);
+	GetMesh()->SetCollisionProfileName(TEXT("SXCharacterMesh"));
 
 	GetCharacterMovement()->MaxWalkSpeed = 600.f;
 	GetCharacterMovement()->JumpZVelocity = 700.f;
