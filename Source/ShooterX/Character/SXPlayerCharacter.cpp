@@ -105,9 +105,13 @@ void ASXPlayerCharacter::InputAttackMelee(const FInputActionValue& InValue)
 		return;
 	}
 
-	USXAnimInstance* AnimInstance = Cast<USXAnimInstance>(GetMesh()->GetAnimInstance());
-	if (IsValid(AnimInstance) == true && IsValid(AttackMeleeMontage) == true && AnimInstance->Montage_IsPlaying(AttackMeleeMontage) == false)
+	if (0 == CurrentComboCount)
 	{
-		AnimInstance->Montage_Play(AttackMeleeMontage);
+		BeginAttack();
+	}
+	else
+	{
+		ensure(FMath::IsWithinInclusive<int32>(CurrentComboCount, 1, MaxComboCount));
+		bIsAttackKeyPressed = true;
 	}
 }

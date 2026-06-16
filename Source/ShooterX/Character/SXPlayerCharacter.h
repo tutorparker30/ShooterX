@@ -57,12 +57,4 @@ protected:
 
 #pragma endregion
 
-#pragma region Attack
-
-protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TObjectPtr<UAnimMontage> AttackMeleeMontage;
-
-#pragma endregion
-
 };
