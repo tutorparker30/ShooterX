@@ -46,6 +46,8 @@ private:
 
 	void InputLook(const FInputActionValue& InValue);
 
+	void InputAttackMelee(const FInputActionValue& InValue);
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess))
 	TObjectPtr<USXInputConfig> PlayerCharacterInputConfig;
@@ -53,6 +55,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess))
 	TObjectPtr<UInputMappingContext> PlayerCharacterInputMappingContext;
 
-#pragma endregion	
+#pragma endregion
+
+#pragma region Attack
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TObjectPtr<UAnimMontage> AttackMeleeMontage;
+
+#pragma endregion
 
 };

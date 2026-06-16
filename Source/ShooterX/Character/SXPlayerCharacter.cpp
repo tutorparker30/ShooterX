@@ -9,6 +9,7 @@
 #include "Input/SXInputConfig.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Animation/SXAnimInstance.h"
 
 ASXPlayerCharacter::ASXPlayerCharacter()
 {
@@ -68,6 +69,7 @@ void ASXPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInputComponent->BindAction(PlayerCharacterInputConfig->Look, ETriggerEvent::Triggered, this, &ThisClass::InputLook);
 		EnhancedInputComponent->BindAction(PlayerCharacterInputConfig->Jump, ETriggerEvent::Started, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(PlayerCharacterInputConfig->Jump, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+		EnhancedInputComponent->BindAction(PlayerCharacterInputConfig->AttackMelee, ETriggerEvent::Started, this, &ThisClass::InputAttackMelee);
 	}
 }
 
@@ -93,5 +95,19 @@ void ASXPlayerCharacter::InputLook(const FInputActionValue& InValue)
 
 		AddControllerYawInput(LookVector.X);
 		AddControllerPitchInput(LookVector.Y);
+	}
+}
+
+void ASXPlayerCharacter::InputAttackMelee(const FInputActionValue& InValue)
+{
+	if (GetCharacterMovement()->IsFalling() == true)
+	{
+		return;
+	}
+
+	USXAnimInstance* AnimInstance = Cast<USXAnimInstance>(GetMesh()->GetAnimInstance());
+	if (IsValid(AnimInstance) == true && IsValid(AttackMeleeMontage) == true && AnimInstance->Montage_IsPlaying(AttackMeleeMontage) == false)
+	{
+		AnimInstance->Montage_Play(AttackMeleeMontage);
 	}
 }
