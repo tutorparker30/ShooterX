@@ -38,4 +38,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	uint8 bShouldMove : 1;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	uint8 bIsFalling : 1;
+
 };

@@ -26,5 +26,6 @@ void USXAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		float GroundAcceleration = UKismetMathLibrary::VSizeXY(OwnerCharacterMovement->GetCurrentAcceleration());
 		bool bIsAccelerationNearlyZero = FMath::IsNearlyZero(GroundAcceleration);
 		bShouldMove = (KINDA_SMALL_NUMBER < GroundSpeed) && (bIsAccelerationNearlyZero == false);
+		bIsFalling = OwnerCharacterMovement->IsFalling();
 	}
 }
