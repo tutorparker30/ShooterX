@@ -5,42 +5,74 @@
 
 #include "NavigationSystem.h"
 #include "Blueprint/AIBlueprintHelperLibrary.h"
+#include "BehaviorTree/BehaviorTree.h"
+#include "BehaviorTree/BlackboardData.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
 
-const float ASXAIController::PatrolRepeatInterval(10.f);
 const float ASXAIController::PatrolRadius(500.f);
+int32 ASXAIController::ShowAIDebug(0);
+
+FAutoConsoleVariableRef CVarShowAIDebug(
+	TEXT("NXProject.ShowAIDebug"),
+	ASXAIController::ShowAIDebug,
+	TEXT(""),
+	ECVF_Cheat
+);
 
 ASXAIController::ASXAIController()
 {
+	Blackboard = CreateDefaultSubobject<UBlackboardComponent>(TEXT("Blackboard"));
+	BrainComponent = CreateDefaultSubobject<UBehaviorTreeComponent>(TEXT("BrainComponent"));
 }
 
 void ASXAIController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GetWorld()->GetTimerManager().SetTimer(PatrolTimerHandle, this, &ThisClass::OnPatrolTimerElapsed, PatrolRepeatInterval, true);
+	APawn* ControlledPawn = GetPawn();
+	if (IsValid(ControlledPawn) == true)
+	{
+		BeginAI(ControlledPawn);
+	}
 }
 
 void ASXAIController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	GetWorld()->GetTimerManager().ClearTimer(PatrolTimerHandle);
+	EndAI();
 
 	Super::EndPlay(EndPlayReason);
 }
 
-void ASXAIController::OnPatrolTimerElapsed()
+void ASXAIController::BeginAI(APawn* InPawn)
 {
-	APawn* ControlledPawn = GetPawn();
-	if (IsValid(ControlledPawn) == true)
+	UBlackboardComponent* BlackboardComponent = Cast<UBlackboardComponent>(Blackboard);
+	if (IsValid(BlackboardComponent) == true)
 	{
-		UNavigationSystemV1* NavigationSystem = UNavigationSystemV1::GetNavigationSystem(GetWorld());
-		if (IsValid(NavigationSystem) == true)
+		if (UseBlackboard(BlackboardDataAsset, BlackboardComponent) == true)
 		{
-			FVector ActorLocation = ControlledPawn->GetActorLocation();
-			FNavLocation NextLocation;
-			if (NavigationSystem->GetRandomPointInNavigableRadius(ActorLocation, PatrolRadius, NextLocation) == true)
+			bool bRunSucceeded = RunBehaviorTree(BehaviorTree);
+			checkf(bRunSucceeded == true, TEXT("Fail to run behavior tree."));
+
+			if (ShowAIDebug == 1)
 			{
-				UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, NextLocation.Location);
+				UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("BeginAI()")));
 			}
 		}
 	}
 }
+
+void ASXAIController::EndAI()
+{
+	UBehaviorTreeComponent* BehaviorTreeComponent = Cast<UBehaviorTreeComponent>(BrainComponent);
+	if (IsValid(BehaviorTreeComponent) == true)
+	{
+		BehaviorTreeComponent->StopTree();
+
+		if (ShowAIDebug == 1)
+		{
+			UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("EndAI()")));
+		}
+	}
+}
+
