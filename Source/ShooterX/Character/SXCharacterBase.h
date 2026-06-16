@@ -37,6 +37,9 @@ public:
 	UFUNCTION()
 	virtual void EndAttack(UAnimMontage* InMontage, bool bInterruped);
 
+public:
+	static int32 ShowAttackMeleeDebug;
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UAnimMontage> AttackMeleeMontage;
@@ -52,6 +55,12 @@ protected:
 	bool bIsAttackKeyPressed = false;
 
 	FOnMontageEnded OnMeleeAttackMontageEndedDelegate;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float AttackMeleeRange = 50.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float AttackMeleeRadius = 20.f;
 
 #pragma endregion
 

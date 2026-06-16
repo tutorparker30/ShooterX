@@ -6,6 +6,16 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Animation/SXAnimInstance.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "ShooterX.h"
+
+int32 ASXCharacterBase::ShowAttackMeleeDebug = 0;
+
+FAutoConsoleVariableRef CVarShowAttackMeleeDebug(
+	TEXT("SX.ShowAttackMeleeDebug"),
+	ASXCharacterBase::ShowAttackMeleeDebug,
+	TEXT(""),
+	ECVF_Cheat
+);
 
 ASXCharacterBase::ASXCharacterBase()
 {
@@ -33,6 +43,58 @@ void ASXCharacterBase::BeginPlay()
 void ASXCharacterBase::HandleOnCheckHit()
 {
 	UKismetSystemLibrary::PrintString(this, TEXT("HandleOnCheckHit()"));
+
+	TArray<FHitResult> HitResults;
+	FCollisionQueryParams Params(NAME_None, false, this);
+
+	bool bResult = GetWorld()->SweepMultiByChannel(
+		HitResults,
+		GetActorLocation(),
+		GetActorLocation() + AttackMeleeRange * GetActorForwardVector(),
+		FQuat::Identity,
+		ECC_ATTACK,
+		FCollisionShape::MakeSphere(AttackMeleeRadius),
+		Params
+	);
+
+	if (true == bResult)
+	{
+		if (HitResults.IsEmpty() == false)
+		{
+			for (FHitResult HitResult : HitResults)
+			{
+				if (IsValid(HitResult.GetActor()) == true)
+				{
+					//UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("Hit Actor Name: %s"), *HitResult.GetActor()->GetName()));
+					if (1 == ShowAttackMeleeDebug)
+					{
+						UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("Hit Actor Name: %s"), *HitResult.GetActor()->GetName()));
+					}
+				}
+			}
+		}
+	}
+
+	if (1 == ShowAttackMeleeDebug)
+	{
+		FVector TraceVector = AttackMeleeRange * GetActorForwardVector();
+		FVector Center = GetActorLocation() + TraceVector + GetActorUpVector() * 40.f;
+		float HalfHeight = AttackMeleeRange * 0.5f + AttackMeleeRadius;
+		FQuat CapsuleRot = FRotationMatrix::MakeFromZ(TraceVector).ToQuat();
+		FColor DrawColor = true == bResult ? FColor::Green : FColor::Red;
+		float DebugLifeTime = 5.f;
+
+		DrawDebugCapsule(
+			GetWorld(),
+			Center,
+			HalfHeight,
+			AttackMeleeRadius,
+			CapsuleRot,
+			DrawColor,
+			false,
+			DebugLifeTime
+		);
+	}
 }
 
 void ASXCharacterBase::HandleOnCheckInputAttack()
