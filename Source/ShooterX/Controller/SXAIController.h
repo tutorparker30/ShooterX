@@ -17,6 +17,8 @@ class SHOOTERX_API ASXAIController : public AAIController
 {
 	GENERATED_BODY()
 
+	friend class ASXNonPlayerCharacter;
+
 public:
 	ASXAIController();
 
@@ -33,6 +35,10 @@ public:
 	static const float PatrolRadius;
 
 	static int32 ShowAIDebug;
+
+	static const FName StartPatrolPositionKey;
+
+	static const FName EndPatrolPositionKey;
 
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Meta = (AllowPrivateAccess))

@@ -5,18 +5,71 @@
 
 #include "Controller/SXAIController.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Animation/SXAnimInstance.h"
 
 ASXNonPlayerCharacter::ASXNonPlayerCharacter()
+	: bIsNowAttacking(false)
 {
 	PrimaryActorTick.bCanEverTick = true;
 
 	GetCharacterMovement()->MaxWalkSpeed = 50.f;
 
+	bUseControllerRotationYaw = false;
+
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 180.f, 0.f);
-	GetCharacterMovement()->bOrientRotationToMovement = true;
-	GetCharacterMovement()->bUseControllerDesiredRotation = false;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	GetCharacterMovement()->bUseControllerDesiredRotation = true;
 
 	AIControllerClass = ASXAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
-		// ASXNonPlayerCharacterëŠ” ë ˆë²¨ì— ë°°ì¹˜ë˜ê±°ë‚˜ ìƒˆë¡­ê²Œ ìƒì„±ë˜ë©´ SXAIControllerì˜ ë¹™ì˜ê°€ ìë™ìœ¼ë¡œ ì§„í–‰ë¨.
+}
+
+float ASXNonPlayerCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	float FinalDamageAmount = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (CurrentHP < KINDA_SMALL_NUMBER)
+	{
+		ASXAIController* AIController = Cast<ASXAIController>(GetController());
+		if (IsValid(AIController) == true)
+		{
+			AIController->EndAI();
+				// NPC°¡ Á×¾îµµ ½ÃÃ¼ »óÅÂ¿¡¼­ °ø°İÇÏ°Å³ª È¸ÀüÇÏ´Â ¹®Á¦°¡ ÀÖÀ½.
+				// Á×°ÔµÇ¸é ºñÇìÀÌºñ¾î Æ®¸®°¡ Á¾·áµÇ°Ô²û ±¸Çö.
+		}
+	}
+
+	return FinalDamageAmount;
+}
+
+void ASXNonPlayerCharacter::BeginAttack()
+{
+	USXAnimInstance* AnimInstance = Cast<USXAnimInstance>(GetMesh()->GetAnimInstance());
+	checkf(IsValid(AnimInstance) == true, TEXT("Invalid AnimInstance"));
+
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+	if (IsValid(AnimInstance) == true && IsValid(AttackMeleeMontage) == true && AnimInstance->Montage_IsPlaying(AttackMeleeMontage) == false)
+	{
+		AnimInstance->Montage_Play(AttackMeleeMontage);
+
+		bIsNowAttacking = true;
+
+		if (OnAttackMontageEndedDelegate.IsBound() == false)
+		{
+			OnAttackMontageEndedDelegate.BindUObject(this, &ThisClass::EndAttack);
+			AnimInstance->Montage_SetEndDelegate(OnAttackMontageEndedDelegate, AttackMeleeMontage);
+		}
+	}
+}
+
+void ASXNonPlayerCharacter::EndAttack(UAnimMontage* InMontage, bool bInterruped)
+{
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+
+	bIsNowAttacking = false;
+
+	if (OnAttackMontageEndedDelegate.IsBound() == true)
+	{
+		OnAttackMontageEndedDelegate.Unbind();
+	}
 }

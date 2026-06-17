@@ -12,6 +12,8 @@
 
 const float ASXAIController::PatrolRadius(500.f);
 int32 ASXAIController::ShowAIDebug(0);
+const FName ASXAIController::StartPatrolPositionKey(TEXT("StartPatrolPosition"));
+const FName ASXAIController::EndPatrolPositionKey(TEXT("EndPatrolPosition"));
 
 FAutoConsoleVariableRef CVarShowAIDebug(
 	TEXT("NXProject.ShowAIDebug"),
@@ -53,6 +55,8 @@ void ASXAIController::BeginAI(APawn* InPawn)
 		{
 			bool bRunSucceeded = RunBehaviorTree(BehaviorTree);
 			checkf(bRunSucceeded == true, TEXT("Fail to run behavior tree."));
+			
+			BlackboardComponent->SetValueAsVector(StartPatrolPositionKey, InPawn->GetActorLocation());
 
 			if (ShowAIDebug == 1)
 			{
