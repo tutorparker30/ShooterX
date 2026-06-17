@@ -6,11 +6,19 @@
 #include "Controller/SXAIController.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Animation/SXAnimInstance.h"
+#include "Component/SXStatusComponent.h"
+#include "UI/UW_HPText.h"
+#include "Component/SXHPTextWidgetComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "Character/SXPlayerCharacter.h"
+#include "Game/SXPlayerState.h"
 
 ASXNonPlayerCharacter::ASXNonPlayerCharacter()
 	: bIsNowAttacking(false)
 {
 	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickInterval = 0.1f;
 
 	GetCharacterMovement()->MaxWalkSpeed = 50.f;
 
@@ -22,24 +30,60 @@ ASXNonPlayerCharacter::ASXNonPlayerCharacter()
 
 	AIControllerClass = ASXAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
+	HPTextWidgetComponent = CreateDefaultSubobject<USXHPTextWidgetComponent>(TEXT("WidgetComponent"));
+	HPTextWidgetComponent->SetupAttachment(GetRootComponent());
+	HPTextWidgetComponent->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
+	HPTextWidgetComponent->SetWidgetSpace(EWidgetSpace::World);
+	HPTextWidgetComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 float ASXNonPlayerCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	float FinalDamageAmount = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	if (CurrentHP < KINDA_SMALL_NUMBER)
+	if (StatusComponent->IsDead() == true)
 	{
 		ASXAIController* AIController = Cast<ASXAIController>(GetController());
 		if (IsValid(AIController) == true)
 		{
 			AIController->EndAI();
-				// NPC가 죽어도 시체 상태에서 공격하거나 회전하는 문제가 있음.
-				// 죽게되면 비헤이비어 트리가 종료되게끔 구현.
+		}
+
+		ASXPlayerCharacter* DamageCauserCharacter = Cast<ASXPlayerCharacter>(DamageCauser);
+		if (IsValid(DamageCauserCharacter) == true)
+		{
+			ASXPlayerState* SPlayerState = Cast<ASXPlayerState>(DamageCauserCharacter->GetPlayerState());
+			if (IsValid(SPlayerState) == true)
+			{
+				SPlayerState->AddCurrentKillCount(1);
+			}
 		}
 	}
 
 	return FinalDamageAmount;
+}
+
+void ASXNonPlayerCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (IsValid(HPTextWidgetComponent) == true)
+	{
+		FVector WidgetComponentLocation = HPTextWidgetComponent->GetComponentLocation();
+		FVector LocalPlayerCameraLocation = UGameplayStatics::GetPlayerCameraManager(this, 0)->GetCameraLocation();
+		HPTextWidgetComponent->SetWorldRotation(UKismetMathLibrary::FindLookAtRotation(WidgetComponentLocation, LocalPlayerCameraLocation));
+	}
+}
+
+void ASXNonPlayerCharacter::SetHPTextWidget(UUW_HPText* InHPTextWidget)
+{
+	if (IsValid(InHPTextWidget) == true)
+	{
+		InHPTextWidget->InitializeHPTextWidget(StatusComponent);
+		StatusComponent->OnCurrentHPChanged.AddUObject(InHPTextWidget, &UUW_HPText::OnCurrentHPChange);
+		StatusComponent->OnMaxHPChanged.AddUObject(InHPTextWidget, &UUW_HPText::OnMaxHPChange);
+	}
 }
 
 void ASXNonPlayerCharacter::BeginAttack()

@@ -8,6 +8,9 @@
 
 DECLARE_DELEGATE_TwoParams(FOnAttackMontageEnded, UAnimMontage*, bool /*bInterrupted*/)
 
+class USXHPTextWidgetComponent;
+class UUW_HPText;
+
 /**
  * 
  */
@@ -23,6 +26,10 @@ public:
 
 	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
+	virtual void Tick(float DeltaSeconds) override;
+
+	virtual void SetHPTextWidget(UUW_HPText* InHPTextWidget);
+
 protected:
 	virtual void BeginAttack();
 
@@ -33,5 +40,8 @@ public:
 
 protected:
 	FOnAttackMontageEnded OnAttackMontageEndedDelegate;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TObjectPtr<USXHPTextWidgetComponent> HPTextWidgetComponent;
 
 };

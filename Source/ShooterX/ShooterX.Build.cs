@@ -23,7 +23,10 @@ public class ShooterX : ModuleRules
 				"Niagara",
 
 				// AI
-				"AIModule", "NavigationSystem", "GameplayTasks"
+				"AIModule", "NavigationSystem", "GameplayTasks",
+
+				// UI
+				"UMG",
 			}
 		);
 

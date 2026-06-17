@@ -6,6 +6,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Character/SXNonPlayerCharacter.h"
+#include "Component/SXStatusComponent.h"
 
 void USXAnimInstance::NativeInitializeAnimation()
 {
@@ -28,7 +29,10 @@ void USXAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bool bIsAccelerationNearlyZero = FMath::IsNearlyZero(GroundAcceleration);
 		bShouldMove = (KINDA_SMALL_NUMBER < GroundSpeed) && (bIsAccelerationNearlyZero == false);
 		bIsFalling = OwnerCharacterMovement->IsFalling();
-		bIsDead = OwnerCharacter->IsDead();
+		if (IsValid(OwnerCharacter->GetStatusComponent()) == true)
+		{
+			bIsDead = OwnerCharacter->GetStatusComponent()->IsDead();
+		}
 
 		if (ASXNonPlayerCharacter* OwnerNPC = Cast<ASXNonPlayerCharacter>(OwnerCharacter))
 		{

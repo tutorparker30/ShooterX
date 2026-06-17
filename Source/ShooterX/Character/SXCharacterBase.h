@@ -7,6 +7,7 @@
 #include "SXCharacterBase.generated.h"
 
 class UAnimMontage;
+class USXStatusComponent;
 
 UCLASS()
 class SHOOTERX_API ASXCharacterBase : public ACharacter
@@ -69,29 +70,15 @@ protected:
 #pragma region HP
 
 public:
-	float GetMaxHP() const { return MaxHP; }
-
-	float GetCurrentHP() const { return CurrentHP; }
-
-	void SetMaxHP(float InMaxHP) { MaxHP = InMaxHP; }
-
-	void SetCurrentHP(float InCurrentHP) { CurrentHP = InCurrentHP; }
-
-	bool IsDead() const { return bIsDead; }
+	USXStatusComponent* GetStatusComponent() const { return StatusComponent; }
 
 protected:
 	UFUNCTION()
 	virtual void HandleOnPostCharacterDead();
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float MaxHP = 100.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float CurrentHP = 100.f;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	uint8 bIsDead : 1;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Meta = (AllowPrivateAccess))
+	TObjectPtr<USXStatusComponent> StatusComponent;
 
 #pragma endregion
 

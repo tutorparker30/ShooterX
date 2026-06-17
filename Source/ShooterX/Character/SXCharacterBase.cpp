@@ -9,6 +9,7 @@
 #include "ShooterX.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/DamageEvents.h"
+#include "Component/SXStatusComponent.h"
 
 int32 ASXCharacterBase::ShowAttackMeleeDebug = 0;
 
@@ -36,7 +37,7 @@ ASXCharacterBase::ASXCharacterBase()
 	GetCharacterMovement()->MaxWalkSpeed = 600.f;
 	GetCharacterMovement()->JumpZVelocity = 700.f;
 
-	bIsDead = false;
+	StatusComponent = CreateDefaultSubobject<USXStatusComponent>(TEXT("StatusComponent"));
 }
 
 void ASXCharacterBase::BeginPlay()
@@ -164,20 +165,17 @@ float ASXCharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 {
 	float FinalDamageAmount = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	CurrentHP = FMath::Clamp(CurrentHP - FinalDamageAmount, 0.f, MaxHP);
+	StatusComponent->ApplyDamage(FinalDamageAmount);
 
-	if (CurrentHP < KINDA_SMALL_NUMBER)
+	if (StatusComponent->IsDead() == true)
 	{
-		bIsDead = true;
-		CurrentHP = 0.f;
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
 	}
 
 	if (1 == ShowAttackMeleeDebug)
 	{
-		//UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("%s was taken damage: %.3f"), *GetName(), FinalDamageAmount));		
-		UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("%s [%.1f / %.1f]"), *GetName(), CurrentHP, MaxHP));
+		UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("%s [%.1f / %.1f]"), *GetName(), StatusComponent->GetCurrentHP(), StatusComponent->GetMaxHP()));
 	}
 
 	return FinalDamageAmount;

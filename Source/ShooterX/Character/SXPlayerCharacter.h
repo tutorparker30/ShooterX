@@ -11,6 +11,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class USXInputConfig;
 class UInputMappingContext;
+class UNiagaraComponent;
 
 /**
  *
@@ -54,6 +55,17 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess))
 	TObjectPtr<UInputMappingContext> PlayerCharacterInputMappingContext;
+
+#pragma endregion
+
+#pragma region KillCount
+
+public:
+	UNiagaraComponent* GetNiagaraComponent() const { return NiagaraComponent; }
+
+protected:
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UNiagaraComponent> NiagaraComponent;
 
 #pragma endregion
 

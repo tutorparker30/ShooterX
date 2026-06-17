@@ -10,6 +10,8 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Animation/SXAnimInstance.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
 
 ASXPlayerCharacter::ASXPlayerCharacter()
 {
@@ -41,6 +43,10 @@ ASXPlayerCharacter::ASXPlayerCharacter()
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 360.f, 0.f);
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->bUseControllerDesiredRotation = false;
+
+	NiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("NiagaraComponent"));
+	NiagaraComponent->SetupAttachment(RootComponent);
+	NiagaraComponent->SetAutoActivate(false);
 }
 
 void ASXPlayerCharacter::BeginPlay()
