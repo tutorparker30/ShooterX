@@ -5,13 +5,23 @@
 	"Description": "",
 	"Modules": [
 		{
+			"Name": "ShooterXPlayGround",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault",
+			"AdditionalDependencies": [
+				"Engine",
+				"CoreUObject"
+			]
+		},
+		{
 			"Name": "ShooterX",
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"Engine",
 				"AIModule",
-				"UMG"
+				"UMG",
+				"ShooterXPlayGround"
 			]
 		}
 	],

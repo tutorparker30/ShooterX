@@ -12,6 +12,7 @@ class UCameraComponent;
 class USXInputConfig;
 class UInputMappingContext;
 class UNiagaraComponent;
+struct FStreamableHandle;
 
 /**
  *
@@ -66,6 +67,20 @@ public:
 protected:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UNiagaraComponent> NiagaraComponent;
+
+#pragma endregion
+
+#pragma region MeshMaterial
+
+private:
+	void OnMeshMaterialLoadCompleted(FSoftObjectPath Path01, FSoftObjectPath Path02);
+
+protected:
+	FSoftObjectPath CurrentPlayerCharacterMeshMaterialPath01 = FSoftObjectPath();
+
+	FSoftObjectPath CurrentPlayerCharacterMeshMaterialPath02 = FSoftObjectPath();
+
+	TSharedPtr<FStreamableHandle> AssetStreamableHandle = nullptr;
 
 #pragma endregion
 

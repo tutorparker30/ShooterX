@@ -12,6 +12,9 @@
 #include "Animation/SXAnimInstance.h"
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
+#include "ShooterXPlayGround/SXCharacterMaterialManager.h"
+#include "Engine/AssetManager.h"
+#include "Engine/StreamableManager.h"
 
 ASXPlayerCharacter::ASXPlayerCharacter()
 {
@@ -62,6 +65,36 @@ void ASXPlayerCharacter::BeginPlay()
 			Subsystem->AddMappingContext(PlayerCharacterInputMappingContext, 0);
 		}
 	}
+
+	const USXCharacterMaterialManager* CDO = GetDefault<USXCharacterMaterialManager>();
+
+	const int32 MaterialPathCount = CDO->PlayerCharacterMeshMaterialPaths.Num();
+
+	if (MaterialPathCount < 2 || MaterialPathCount % 2 != 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid PlayerCharacterMeshMaterialPaths count."));
+		return;
+	}
+
+	const int32 PairCount = MaterialPathCount / 2;
+	const int32 PairIndex = FMath::RandRange(0, PairCount - 1);
+	const int32 MaterialIndex = PairIndex * 2;
+
+	CurrentPlayerCharacterMeshMaterialPath01 = CDO->PlayerCharacterMeshMaterialPaths[MaterialIndex];
+	CurrentPlayerCharacterMeshMaterialPath02 = CDO->PlayerCharacterMeshMaterialPaths[MaterialIndex + 1];
+
+	const FSoftObjectPath Path01 = CurrentPlayerCharacterMeshMaterialPath01;
+	const FSoftObjectPath Path02 = CurrentPlayerCharacterMeshMaterialPath02;
+
+	AssetStreamableHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		{ Path01, Path02 },
+		FStreamableDelegate::CreateUObject(
+			this,
+			&ThisClass::OnMeshMaterialLoadCompleted,
+			Path01,
+			Path02
+		)
+	);
 }
 
 void ASXPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -119,5 +152,25 @@ void ASXPlayerCharacter::InputAttackMelee(const FInputActionValue& InValue)
 	{
 		ensure(FMath::IsWithinInclusive<int32>(CurrentComboCount, 1, MaxComboCount));
 		bIsAttackKeyPressed = true;
+	}
+}
+
+void ASXPlayerCharacter::OnMeshMaterialLoadCompleted(FSoftObjectPath Path01, FSoftObjectPath Path02)
+{
+	TSoftObjectPtr<UMaterialInstance> LoadedMaterialInstance01(Path01);
+	TSoftObjectPtr<UMaterialInstance> LoadedMaterialInstance02(Path02);
+
+	if (LoadedMaterialInstance01.IsValid() &&
+		LoadedMaterialInstance02.IsValid() &&
+		IsValid(GetMesh()))
+	{
+		GetMesh()->SetMaterial(1, LoadedMaterialInstance01.Get());
+		GetMesh()->SetMaterial(0, LoadedMaterialInstance02.Get());
+	}
+
+	if (AssetStreamableHandle.IsValid())
+	{
+		AssetStreamableHandle->ReleaseHandle();
+		AssetStreamableHandle.Reset();
 	}
 }

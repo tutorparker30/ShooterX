@@ -30,7 +30,11 @@ public class ShooterX : ModuleRules
 			}
 		);
 
-		PrivateDependencyModuleNames.AddRange(new string[] { });
+		PrivateDependencyModuleNames.AddRange(new string[]
+			{
+				"ShooterXPlayGround",
+			}
+		);
 
 		PublicIncludePaths.AddRange(new string[] { "ShooterX" });
 	}
