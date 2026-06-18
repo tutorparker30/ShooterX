@@ -10,12 +10,22 @@
 #include "Engine/EngineTypes.h"
 #include "Engine/DamageEvents.h"
 #include "Component/SXStatusComponent.h"
+#include "Item/SXWeapon.h"
 
 int32 ASXCharacterBase::ShowAttackMeleeDebug = 0;
 
 FAutoConsoleVariableRef CVarShowAttackMeleeDebug(
 	TEXT("SX.ShowAttackMeleeDebug"),
 	ASXCharacterBase::ShowAttackMeleeDebug,
+	TEXT(""),
+	ECVF_Cheat
+);
+
+int32 ASXCharacterBase::ShowAttackRangedDebug = 0;
+
+FAutoConsoleVariableRef CVarShowAttackRangedDebug(
+	TEXT("SX.ShowAttackRangedDebug"),
+	ASXCharacterBase::ShowAttackRangedDebug,
 	TEXT(""),
 	ECVF_Cheat
 );
@@ -63,7 +73,7 @@ void ASXCharacterBase::HandleOnCheckHit()
 		GetActorLocation(),
 		GetActorLocation() + AttackMeleeRange * GetActorForwardVector(),
 		FQuat::Identity,
-		ECC_ATTACK,
+		ECollisionChannel::ECC_GameTraceChannel2,
 		FCollisionShape::MakeSphere(AttackMeleeRadius),
 		Params
 	);
@@ -179,6 +189,15 @@ float ASXCharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 	}
 
 	return FinalDamageAmount;
+}
+
+UAnimMontage* ASXCharacterBase::GetCurrentWeaponAttackAnimMontage() const
+{
+	if (IsValid(CurrentWeapon) == true)
+	{
+		return CurrentWeapon->GetAttackMontage();
+	}
+	return nullptr;
 }
 
 void ASXCharacterBase::HandleOnPostCharacterDead()

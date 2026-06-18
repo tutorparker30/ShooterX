@@ -8,6 +8,7 @@
 
 class UAnimMontage;
 class USXStatusComponent;
+class ASXWeapon;
 
 UCLASS()
 class SHOOTERX_API ASXCharacterBase : public ACharacter
@@ -40,8 +41,15 @@ public:
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
+	UAnimMontage* GetCurrentWeaponAttackAnimMontage() const;
+
 public:
 	static int32 ShowAttackMeleeDebug;
+
+	UPROPERTY()
+	TObjectPtr<ASXWeapon> CurrentWeapon;
+
+	static int32 ShowAttackRangedDebug;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)

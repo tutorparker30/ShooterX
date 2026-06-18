@@ -16,6 +16,8 @@ void USXAnimInstance::NativeInitializeAnimation()
 		OwnerCharacter = Cast<ASXCharacterBase>(OwnerPawn);
 		OwnerCharacterMovement = OwnerCharacter->GetCharacterMovement();
 	}
+
+	bIsUnarmed = true;
 }
 
 void USXAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
@@ -37,6 +39,13 @@ void USXAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		if (ASXNonPlayerCharacter* OwnerNPC = Cast<ASXNonPlayerCharacter>(OwnerCharacter))
 		{
 			bShouldMove = KINDA_SMALL_NUMBER < GroundSpeed;
+		}
+
+		bIsUnarmed = OwnerCharacter->GetCurrentWeaponAttackAnimMontage() == nullptr ? true : false;
+
+		if (APlayerController* OwnerPlayerController = Cast<APlayerController>(OwnerCharacter->GetController()))
+		{
+			NormalizedCurrentPitch = UKismetMathLibrary::NormalizeAxis(OwnerPlayerController->GetControlRotation().Pitch);
 		}
 	}
 }

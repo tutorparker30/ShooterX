@@ -33,4 +33,5 @@ void ASXWeapon::HandleOnPickUp(ASXPlayerCharacter* InPickUpCharacter)
 	AttachToComponent(InPickUpCharacter->GetMesh(), AttachmentRules, FName(TEXT("hand_rSocket")));
 	SetActorEnableCollision(false);
 	PickupComponent->SetSimulatePhysics(false);
+	InPickUpCharacter->CurrentWeapon = this;
 }

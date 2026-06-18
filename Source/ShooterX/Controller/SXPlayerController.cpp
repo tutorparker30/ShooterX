@@ -44,4 +44,15 @@ void ASXPlayerController::BeginPlay()
 			}
 		}
 	}
+
+	if (IsValid(CrosshairWidgetClass) == true)
+	{
+		UUserWidget* CrosshairWidgetInstance = CreateWidget<UUserWidget>(this, CrosshairWidgetClass);
+		if (IsValid(CrosshairWidgetInstance) == true)
+		{
+			CrosshairWidgetInstance->AddToViewport(1);
+
+			CrosshairWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+		}
+	}
 }

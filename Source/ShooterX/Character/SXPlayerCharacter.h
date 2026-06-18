@@ -50,6 +50,10 @@ private:
 
 	void InputAttackMelee(const FInputActionValue& InValue);
 
+	void InputAttackRanged(const FInputActionValue& InValue);
+
+	void TryFire();
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess))
 	TObjectPtr<USXInputConfig> PlayerCharacterInputConfig;
