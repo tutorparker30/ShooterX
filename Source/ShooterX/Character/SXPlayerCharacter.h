@@ -88,4 +88,24 @@ protected:
 
 #pragma endregion
 
+#pragma region
+
+private:
+	bool CanFire() const;
+
+	void Fire();
+
+	bool GetAimLocation(FVector& OutAimLocation) const;
+
+	bool TraceBullet(const FVector& InMuzzleLocation, const FVector& InAimLocation, FHitResult& OutHitResult) const;
+
+	void ApplyHitDamage(const FHitResult& InHitResult);
+
+	void PlayFireAnimation();
+
+	void DrawFire(const FVector& InMuzzleLocation, const FHitResult& InHitResult, bool bHit);
+
+#pragma endregion
+
+
 };

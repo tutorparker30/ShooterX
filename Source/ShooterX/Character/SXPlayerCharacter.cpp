@@ -165,135 +165,12 @@ void ASXPlayerCharacter::InputAttackMelee(const FInputActionValue& InValue)
 
 void ASXPlayerCharacter::InputAttackRanged(const FInputActionValue& InValue)
 {
-	if (0.f < GetCharacterMovement()->Velocity.Size())
+	if (CanFire() == false)
 	{
 		return;
 	}
 
-	if (IsValid(CurrentWeapon) == false)
-	{
-		return;
-	}
-
-	if (IsValid(GetCurrentWeaponAttackAnimMontage()) == false)
-	{
-		return;
-	}
-
-	TryFire();
-}
-
-void ASXPlayerCharacter::TryFire()
-{
-	APlayerController* PlayerController = GetController<APlayerController>();
-	if (IsValid(PlayerController) == true)
-	{
-#pragma region CaculateTargetTransform
-		float FocalDistance = 400.f;
-		FVector FocalLocation;
-		FVector CameraLocation;
-		FRotator CameraRotation;
-
-		PlayerController->GetPlayerViewPoint(CameraLocation, CameraRotation);
-
-		FVector AimDirectionFromCamera = CameraRotation.Vector().GetSafeNormal();
-		FocalLocation = CameraLocation + (AimDirectionFromCamera * FocalDistance);
-
-		FVector WeaponMuzzleLocation = CurrentWeapon->GetPickupComponent()->GetSocketLocation(TEXT("MuzzleFlash"));
-		FVector FinalFocalLocation = FocalLocation + (((WeaponMuzzleLocation - FocalLocation) | AimDirectionFromCamera) * AimDirectionFromCamera);
-
-		FTransform TargetTransform = FTransform(CameraRotation, FinalFocalLocation);
-
-		if (1 == ShowAttackRangedDebug)
-		{
-			DrawDebugSphere(GetWorld(), WeaponMuzzleLocation, 2.f, 16, FColor::Red, false, 60.f);
-
-			DrawDebugSphere(GetWorld(), CameraLocation, 2.f, 16, FColor::Yellow, false, 60.f);
-
-			DrawDebugSphere(GetWorld(), FinalFocalLocation, 2.f, 16, FColor::Magenta, false, 60.f);
-
-			// (WeaponLoc - FocalLoc)
-			DrawDebugLine(GetWorld(), FocalLocation, WeaponMuzzleLocation, FColor::Yellow, false, 60.f, 0, 2.f);
-
-			// AimDir
-			DrawDebugLine(GetWorld(), CameraLocation, FinalFocalLocation, FColor::Blue, false, 60.f, 0, 2.f);
-
-			// Project Direction Line
-			DrawDebugLine(GetWorld(), WeaponMuzzleLocation, FinalFocalLocation, FColor::Red, false, 60.f, 0, 2.f);
-		}
-
-#pragma endregion
-
-#pragma region PerformLineTracing
-
-		FVector BulletDirection = TargetTransform.GetUnitAxis(EAxis::X);
-		FVector StartLocation = WeaponMuzzleLocation;
-		FVector EndLocation = TargetTransform.GetLocation() + BulletDirection * CurrentWeapon->GetMaxAttackRange();
-
-		FHitResult HitResult;
-		FCollisionQueryParams TraceParams(NAME_None, false, this);
-		TraceParams.AddIgnoredActor(CurrentWeapon);
-
-		bool IsCollided = GetWorld()->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, ECollisionChannel::ECC_GameTraceChannel2, TraceParams);
-		if (IsCollided == false)
-		{
-			HitResult.TraceStart = StartLocation;
-			HitResult.TraceEnd = EndLocation;
-		}
-
-		if (2 == ShowAttackRangedDebug)
-		{
-			if (IsCollided == true)
-			{
-				DrawDebugSphere(GetWorld(), StartLocation, 2.f, 16, FColor::Red, false, 60.f);
-
-				DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 2.f, 16, FColor::Green, false, 60.f);
-
-				DrawDebugLine(GetWorld(), StartLocation, HitResult.ImpactPoint, FColor::Blue, false, 60.f, 0, 2.f);
-			}
-			else
-			{
-				DrawDebugSphere(GetWorld(), StartLocation, 2.f, 16, FColor::Red, false, 60.f);
-
-				DrawDebugSphere(GetWorld(), EndLocation, 2.f, 16, FColor::Green, false, 60.f);
-
-				DrawDebugLine(GetWorld(), StartLocation, EndLocation, FColor::Blue, false, 60.f, 0, 2.f);
-			}
-		}
-
-#pragma endregion
-
-		if (IsCollided == true)
-		{
-			ASXCharacterBase* HittedCharacter = Cast<ASXCharacterBase>(HitResult.GetActor());
-			if (IsValid(HittedCharacter) == true)
-			{
-				FDamageEvent DamageEvent;
-
-				FString BoneNameString = HitResult.BoneName.ToString();
-
-				if (true == BoneNameString.Equals(FString(TEXT("HEAD")), ESearchCase::IgnoreCase))
-				{
-					HittedCharacter->TakeDamage(100.f, DamageEvent, GetController(), this);
-				}
-				else
-				{
-					HittedCharacter->TakeDamage(10.f, DamageEvent, GetController(), this);
-				}
-			}
-		}
-
-		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-		if (IsValid(AnimInstance) == true)
-		{
-			if (AnimInstance->Montage_IsPlaying(GetCurrentWeaponAttackAnimMontage()) == false)
-			{
-				AnimInstance->Montage_Play(GetCurrentWeaponAttackAnimMontage());
-			}
-		}
-
-		DrawDebugLine(GetWorld(), WeaponMuzzleLocation, EndLocation, FColor::White, false, 0.1f, 0, 2.f);
-	}
+	Fire();
 }
 
 void ASXPlayerCharacter::OnMeshMaterialLoadCompleted(FSoftObjectPath Path01, FSoftObjectPath Path02)
@@ -314,4 +191,150 @@ void ASXPlayerCharacter::OnMeshMaterialLoadCompleted(FSoftObjectPath Path01, FSo
 		AssetStreamableHandle->ReleaseHandle();
 		AssetStreamableHandle.Reset();
 	}
+}
+
+bool ASXPlayerCharacter::CanFire() const
+{
+	if (0.f < GetCharacterMovement()->Velocity.Size())
+	{
+		return false;
+	}
+
+	if (IsValid(CurrentWeapon) == false)
+	{
+		return false;
+	}
+
+	if (IsValid(GetCurrentWeaponAttackAnimMontage()) == false)
+	{
+		return false;
+	}
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (IsValid(AnimInstance) == false)
+	{
+		return false;
+	}
+
+	if (AnimInstance->Montage_IsPlaying(GetCurrentWeaponAttackAnimMontage()) == true)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+void ASXPlayerCharacter::Fire()
+{
+	FVector MuzzleLocation = CurrentWeapon->GetPickupComponent()->GetSocketLocation(TEXT("MuzzleFlash"));
+
+	FVector AimLocation;
+	if (GetAimLocation(AimLocation) == false)
+	{
+		return;
+	}
+
+	FHitResult HitResult;
+	bool bHit = TraceBullet(MuzzleLocation, AimLocation, HitResult);
+
+	if (bHit == true)
+	{
+		ApplyHitDamage(HitResult);
+	}
+
+	PlayFireAnimation();
+
+	DrawFire(MuzzleLocation, HitResult, bHit);
+}
+
+bool ASXPlayerCharacter::GetAimLocation(FVector& OutAimLocation) const
+{
+	APlayerController* PlayerController = GetController<APlayerController>();
+	if (IsValid(PlayerController) == false)
+	{
+		return false;
+	}
+
+	FVector CameraLocation;
+	FRotator CameraRotation;
+	PlayerController->GetPlayerViewPoint(CameraLocation, CameraRotation);
+
+	FVector CameraDirection = CameraRotation.Vector().GetSafeNormal();
+	FVector CameraTraceEnd = CameraLocation + CameraDirection * CurrentWeapon->GetMaxAttackRange();
+
+	FHitResult CameraHitResult;
+
+	FCollisionQueryParams TraceParams(NAME_None, false, this);
+	TraceParams.AddIgnoredActor(CurrentWeapon);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(CameraHitResult, CameraLocation, CameraTraceEnd, ECC_CAMERAAIM, TraceParams);
+
+	if (true == bHit)
+	{
+		OutAimLocation = CameraHitResult.ImpactPoint;
+	}
+	else
+	{
+		OutAimLocation = CameraTraceEnd;
+	}
+
+	return true;
+}
+
+bool ASXPlayerCharacter::TraceBullet(const FVector& InMuzzleLocation, const FVector& InAimLocation, FHitResult& OutHitResult) const
+{
+	FVector FireDirection = (InAimLocation - InMuzzleLocation).GetSafeNormal();
+	FVector EndLocation = InMuzzleLocation + FireDirection * CurrentWeapon->GetMaxAttackRange();
+
+	FCollisionQueryParams TraceParams(NAME_None, false, this);
+	TraceParams.AddIgnoredActor(CurrentWeapon);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(OutHitResult, InMuzzleLocation, EndLocation, ECC_ATTACK, TraceParams);
+
+	if (bHit == false)
+	{
+		OutHitResult.TraceStart = InMuzzleLocation;
+		OutHitResult.TraceEnd = EndLocation;
+	}
+
+	return bHit;
+}
+
+void ASXPlayerCharacter::ApplyHitDamage(const FHitResult& InHitResult)
+{
+	ASXCharacterBase* HitCharacter = Cast<ASXCharacterBase>(InHitResult.GetActor());
+	if (IsValid(HitCharacter) == false)
+	{
+		return;
+	}
+
+	float Damage = 10.f;
+
+	FString BoneNameString = InHitResult.BoneName.ToString();
+
+	if (InHitResult.BoneName.IsEqual(TEXT("HEAD"), ENameCase::IgnoreCase) == true)
+	{
+		Damage = 100.f;
+	}
+
+	FDamageEvent DamageEvent;
+	HitCharacter->TakeDamage(Damage, DamageEvent, GetController(), this);
+}
+
+void ASXPlayerCharacter::PlayFireAnimation()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (IsValid(AnimInstance) == false)
+	{
+		return;
+	}
+
+	AnimInstance->Montage_Play(GetCurrentWeaponAttackAnimMontage());
+}
+
+void ASXPlayerCharacter::DrawFire(const FVector& InMuzzleLocation, const FHitResult& InHitResult, bool bHit)
+{
+	FVector EndLocation = bHit == true ? InHitResult.ImpactPoint : InHitResult.TraceEnd;
+
+	DrawDebugLine(GetWorld(), InMuzzleLocation, EndLocation, FColor::White, false, 0.1f, 0, 2.f);
 }
