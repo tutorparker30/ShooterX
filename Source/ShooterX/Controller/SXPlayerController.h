@@ -21,6 +21,8 @@ public:
 
 	USXHUD* GetHUDWidget() const { return HUDWidget; };
 
+	void ToggleInGameMenu();
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -33,5 +35,13 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = ASPlayerController, Meta = (AllowPrivateAccess))
 	TSubclassOf<UUserWidget> CrosshairWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = ASXPlayerController, Meta = (AllowPrivateAccess))
+	TSubclassOf<UUserWidget> InGameMenuClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = ASXPlayerController, Meta = (AllowPrivateAccess))
+	TObjectPtr<UUserWidget> InGameMenuInstance;
+
+	bool bIsInGameMenuOn = false;
 
 };

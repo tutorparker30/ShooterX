@@ -54,6 +54,8 @@ private:
 
 	void TryFire();
 
+	void InputMenu(const FInputActionValue& InValue);
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess))
 	TObjectPtr<USXInputConfig> PlayerCharacterInputConfig;

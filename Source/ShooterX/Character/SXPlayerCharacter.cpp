@@ -22,6 +22,7 @@
 #include "Engine/EngineTypes.h"
 #include "Engine/DamageEvents.h"
 #include "ShooterX.h"
+#include "Controller/SXPlayerController.h"
 
 ASXPlayerCharacter::ASXPlayerCharacter()
 {
@@ -117,6 +118,7 @@ void ASXPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInputComponent->BindAction(PlayerCharacterInputConfig->Jump, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 		EnhancedInputComponent->BindAction(PlayerCharacterInputConfig->AttackMelee, ETriggerEvent::Started, this, &ThisClass::InputAttackMelee);
 		EnhancedInputComponent->BindAction(PlayerCharacterInputConfig->AttackRanged, ETriggerEvent::Started, this, &ThisClass::InputAttackRanged);
+		EnhancedInputComponent->BindAction(PlayerCharacterInputConfig->Menu, ETriggerEvent::Started, this, &ThisClass::InputMenu);
 	}
 }
 
@@ -171,6 +173,16 @@ void ASXPlayerCharacter::InputAttackRanged(const FInputActionValue& InValue)
 	}
 
 	Fire();
+}
+
+void ASXPlayerCharacter::InputMenu(const FInputActionValue& InValue)
+{
+	//UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("ASXPlayerCharacter::InputMenu() has been called.")));
+	ASXPlayerController* PlayerController = GetController<ASXPlayerController>();
+	if (true == IsValid(PlayerController))
+	{
+		PlayerController->ToggleInGameMenu();
+	}
 }
 
 void ASXPlayerCharacter::OnMeshMaterialLoadCompleted(FSoftObjectPath Path01, FSoftObjectPath Path02)
