@@ -74,6 +74,7 @@ void ASXPlayerCharacter::BeginPlay()
 		}
 	}
 
+	/*
 	const USXCharacterMaterialManager* CDO = GetDefault<USXCharacterMaterialManager>();
 
 	const int32 MaterialPathCount = CDO->PlayerCharacterMeshMaterialPaths.Num();
@@ -103,6 +104,7 @@ void ASXPlayerCharacter::BeginPlay()
 			Path02
 		)
 	);
+	*/
 }
 
 void ASXPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -203,6 +205,34 @@ void ASXPlayerCharacter::OnMeshMaterialLoadCompleted(FSoftObjectPath Path01, FSo
 		AssetStreamableHandle->ReleaseHandle();
 		AssetStreamableHandle.Reset();
 	}
+}
+
+void ASXPlayerCharacter::InitializeCharacterMeshMaterial(const EPlayerColor InPlayerColor)
+{
+	const USXCharacterMaterialManager* CDO = GetDefault<USXCharacterMaterialManager>();
+	if (IsValid(CDO) == false)
+	{
+		return;
+	}
+
+	int32 MaterialIndex = static_cast<int32>(InPlayerColor);
+	MaterialIndex *= 2;
+
+	CurrentPlayerCharacterMeshMaterialPath01 = CDO->PlayerCharacterMeshMaterialPaths[MaterialIndex];
+	CurrentPlayerCharacterMeshMaterialPath02 = CDO->PlayerCharacterMeshMaterialPaths[MaterialIndex + 1];
+
+	const FSoftObjectPath Path01 = CurrentPlayerCharacterMeshMaterialPath01;
+	const FSoftObjectPath Path02 = CurrentPlayerCharacterMeshMaterialPath02;
+
+	AssetStreamableHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+		{ Path01, Path02 },
+		FStreamableDelegate::CreateUObject(
+			this,
+			&ThisClass::OnMeshMaterialLoadCompleted,
+			Path01,
+			Path02
+		)
+	);
 }
 
 bool ASXPlayerCharacter::CanFire() const

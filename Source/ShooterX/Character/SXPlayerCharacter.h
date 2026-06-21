@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Character/SXCharacterBase.h"
 #include "InputActionValue.h"
+#include "Game/SXPlayerState.h"
 #include "SXPlayerCharacter.generated.h"
 
 class USpringArmComponent;
@@ -77,6 +78,9 @@ protected:
 #pragma endregion
 
 #pragma region MeshMaterial
+
+public:
+	void InitializeCharacterMeshMaterial(const EPlayerColor InPlayerColor);
 
 private:
 	void OnMeshMaterialLoadCompleted(FSoftObjectPath Path01, FSoftObjectPath Path02);

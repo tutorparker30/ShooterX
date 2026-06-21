@@ -9,6 +9,16 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMaxKillCountChangedDelegate, int32, InMaxKillCount);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCurrentKillCountChangedDelegate, int32, InCurrentKillCount);
 
+UENUM(BlueprintType)
+enum class EPlayerColor : uint8
+{
+	Black,
+	Blue,
+	Red,
+	White,
+	End
+};
+
 /**
  *
  */
@@ -28,6 +38,14 @@ public:
 
 	void AddCurrentKillCount(int32 InCurrentKillCount);
 
+	EPlayerColor GetPlayerColor() const { return PlayerColor; }
+
+protected:
+	virtual void BeginPlay() override;
+
+private:
+	void TryInitializeCharacterMeshMaterial();
+
 public:
 	FOnMaxKillCountChangedDelegate OnMaxKillCountChanged;
 
@@ -39,6 +57,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Meta = (AllowPrivateAccess = true))
 	int32 CurrentKillCount = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Meta = (AllowPrivateAccess = true))
+	EPlayerColor PlayerColor = EPlayerColor::Black;
 
 };
 
