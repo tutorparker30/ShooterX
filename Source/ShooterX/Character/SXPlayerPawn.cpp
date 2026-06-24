@@ -6,6 +6,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
+#include "ShooterX.h"
 
 ASXPlayerPawn::ASXPlayerPawn()
 {
@@ -56,6 +57,19 @@ void ASXPlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 void ASXPlayerPawn::BeginPlay()
 {
 	Super::BeginPlay();
+
+	FString NetRoleString = ShooterXFunctionLibrary::GetRoleString(this);
+	FString CombinedString = FString::Printf(TEXT("BeginPlay() %s [%s]"), *ShooterXFunctionLibrary::GetNetModeString(this), *NetRoleString);
+	ShooterXFunctionLibrary::MyPrintString(this, CombinedString, 10.f);
+}
+
+void ASXPlayerPawn::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	FString NetRoleString = ShooterXFunctionLibrary::GetRoleString(this);
+	FString CombinedString = FString::Printf(TEXT("PossessedBy() %s [%s]"), *ShooterXFunctionLibrary::GetNetModeString(this), *NetRoleString);
+	ShooterXFunctionLibrary::MyPrintString(this, CombinedString, 10.f);
 }
 
 void ASXPlayerPawn::FrontRear(float InAxisValue)
