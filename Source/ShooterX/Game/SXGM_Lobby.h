@@ -6,6 +6,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "SXGM_Lobby.generated.h"
 
+class ASXUIPC_Lobby;
+
 /**
  * 
  */
@@ -17,4 +19,7 @@ class SHOOTERX_API ASXGM_Lobby : public AGameModeBase
 public:
 	virtual void OnPostLogin(AController* NewPlayer) override;	
 	
+public:
+	TArray<TWeakObjectPtr<ASXUIPC_Lobby>> AllPlayerControllers;
+
 };

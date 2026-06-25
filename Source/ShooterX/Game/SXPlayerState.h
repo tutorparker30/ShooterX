@@ -51,7 +51,6 @@ public:
 
 	FOnCurrentKillCountChangedDelegate OnCurrentKillCountChanged;
 
-private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Meta = (AllowPrivateAccess = true))
 	int32 MaxKillCount = 99;
 

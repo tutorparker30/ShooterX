@@ -6,6 +6,8 @@
 #include "UI/SXChatInput.h"
 #include "ShooterX.h"
 #include "EngineUtils.h"
+#include "Game/SXPS_Lobby.h"
+#include "Character/SXLobbyPlayerCharacter.h"
 
 void ASXUIPC_Lobby::BeginPlay()
 {
@@ -33,10 +35,17 @@ void ASXUIPC_Lobby::SetChatMessageString(const FString& InChatMessageString)
 {
 	ChatMessageString = InChatMessageString;
 
-	//PrintChatMessageString(InChatMessageString);
 	if (IsLocalController() == true)
 	{
-		ServerRPCPrintChatMessageString(InChatMessageString);
+		//ServerRPCPrintChatMessageString(InChatMessageString);
+
+		ASXPS_Lobby* SXPS = GetPlayerState<ASXPS_Lobby>();
+		if (IsValid(SXPS) == true)
+		{
+			FString CombinedMessageString = SXPS->PlayerLobbyNameString + TEXT(": ") + InChatMessageString;
+
+			ServerRPCPrintChatMessageString(CombinedMessageString);
+		}
 	}
 }
 

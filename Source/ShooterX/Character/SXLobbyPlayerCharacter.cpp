@@ -5,6 +5,7 @@
 #include "ShooterXPlayGround/SXCharacterMaterialManager.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
+#include "Net/UnrealNetwork.h"
 
 ASXLobbyPlayerCharacter::ASXLobbyPlayerCharacter()
 {
@@ -62,8 +63,21 @@ void ASXLobbyPlayerCharacter::BeginPlay()
 	}
 }
 
+void ASXLobbyPlayerCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ThisClass, SelectedMeshMaterialIndex);
+}
+
 void ASXLobbyPlayerCharacter::SetLocalCharacterSkeletalMesh(int32 InPrevOrNext)
 {
+	if (IsLocallyControlled() == true)
+	{
+		ServerRPCSetCharacterSkeletalMesh(InPrevOrNext);
+	}
+
+	/*
 	if (CharacterSkeletalMeshComponent.IsValid() == false)
 	{
 		return;
@@ -93,5 +107,53 @@ void ASXLobbyPlayerCharacter::SetLocalCharacterSkeletalMesh(int32 InPrevOrNext)
 
 	CharacterSkeletalMeshComponent->SetMaterial(1, LoadedMaterialInstance0Assets[SelectedMeshMaterialIndex].Get());
 	CharacterSkeletalMeshComponent->SetMaterial(0, LoadedMaterialInstance1Assets[SelectedMeshMaterialIndex].Get());
-		// 꽂아줄때는 반대로 꽂아야함.
+	*/
+}
+
+void ASXLobbyPlayerCharacter::ServerRPCSetCharacterSkeletalMesh_Implementation(int32 InPrevOrNext)
+{
+	const int32 MaterialCount = FMath::Min(
+		LoadedMaterialInstance0Assets.Num(),
+		LoadedMaterialInstance1Assets.Num()
+	);
+
+	if (MaterialCount <= 0)
+	{
+		return;
+	}
+
+	SelectedMeshMaterialIndex += InPrevOrNext;
+
+	if (SelectedMeshMaterialIndex < 0)
+	{
+		SelectedMeshMaterialIndex = MaterialCount - 1;
+	}
+
+	if (MaterialCount <= SelectedMeshMaterialIndex)
+	{
+		SelectedMeshMaterialIndex = 0;
+	}
+
+	OnRep_SelectedMeshMaterialIndex();
+}
+
+void ASXLobbyPlayerCharacter::OnRep_SelectedMeshMaterialIndex()
+{
+	if (CharacterSkeletalMeshComponent.IsValid() == false)
+	{
+		return;
+	}
+
+	const int32 MaterialCount = FMath::Min(
+		LoadedMaterialInstance0Assets.Num(),
+		LoadedMaterialInstance1Assets.Num()
+	);
+
+	if (MaterialCount <= 0)
+	{
+		return;
+	}
+
+	CharacterSkeletalMeshComponent->SetMaterial(1, LoadedMaterialInstance0Assets[SelectedMeshMaterialIndex].Get());
+	CharacterSkeletalMeshComponent->SetMaterial(0, LoadedMaterialInstance1Assets[SelectedMeshMaterialIndex].Get());
 }

@@ -1,4 +1,4 @@
-// SXCharacterBase.h
+// SXLobbyPlayerCharacter.h
 
 #pragma once
 
@@ -24,6 +24,8 @@ public:
 
 	virtual void BeginPlay() override;
 
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+
 #pragma endregion
 
 
@@ -31,6 +33,13 @@ public:
 
 public:
 	void SetLocalCharacterSkeletalMesh(int32 InPrevOrNext);
+
+private:
+	UFUNCTION(Server, Reliable)
+	void ServerRPCSetCharacterSkeletalMesh(int32 InPrevOrNext);
+
+	UFUNCTION()
+	void OnRep_SelectedMeshMaterialIndex();
 
 public:
 	TWeakObjectPtr<USkeletalMeshComponent> CharacterSkeletalMeshComponent;
@@ -41,6 +50,7 @@ public:
 
 	TArray<TObjectPtr<UMaterialInstance>> LoadedMaterialInstance1Assets;
 
+	UPROPERTY(ReplicatedUsing = OnRep_SelectedMeshMaterialIndex)
 	int32 SelectedMeshMaterialIndex = 0;
 
 #pragma endregion
