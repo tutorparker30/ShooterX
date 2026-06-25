@@ -15,14 +15,8 @@ struct FSXMaxHPTableRow : public FTableRowBase
 	GENERATED_BODY()
 
 public:
-	FSXMaxHPTableRow()
-	{
-
-	}
-
-public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	float MaxHP;
+	float MaxHP = 0.f;
 
 };
 
