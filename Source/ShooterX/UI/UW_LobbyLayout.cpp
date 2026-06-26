@@ -82,5 +82,5 @@ void UUW_LobbyLayout::OnPlayButtonClicked()
 		FFileHelper::SaveStringToFile(PlayerInfoJsonString, *AbsoluteFilePath);
 	}
 
-	UGameplayStatics::OpenLevel(GetWorld(), TEXT("Loading"), true, FString(TEXT("NextLevel=L_Expanse")));
+	//UGameplayStatics::OpenLevel(GetWorld(), TEXT("Loading"), true, FString(TEXT("NextLevel=L_Expanse")));
 }

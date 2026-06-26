@@ -11,6 +11,13 @@
 ASXGM_Lobby::ASXGM_Lobby()
 {
 	SX_LOG_NET(LogSXNet, Log, TEXT(""));
+
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = true;
+
+	bUseSeamlessTravel = false;
+
+	RemainTimeForPlaying = InitialRemainTimeForPlaying;
 }
 
 void ASXGM_Lobby::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
@@ -93,4 +100,51 @@ void ASXGM_Lobby::StartPlay()
 	Super::StartPlay();
 
 	SX_LOG_NET(LogSXNet, Log, TEXT("End"));
+}
+
+void ASXGM_Lobby::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
+	if (bIsTravelling == true)
+	{
+		return;
+	}
+
+	if (AllPlayerControllers.Num() < RequiredPlayerCount)
+	{
+		RemainTimeForPlaying = InitialRemainTimeForPlaying;
+		return;
+	}
+
+	RemainTimeForPlaying -= DeltaSeconds;
+
+	SX_LOG_NET(LogSXNet, Log, TEXT("RemainTimeForPlaying: %.2f"), RemainTimeForPlaying);
+
+	if (RemainTimeForPlaying <= 0.f)
+	{
+		bIsTravelling = true;
+
+		UWorld* World = GetWorld();
+		if (IsValid(World) == true)
+		{
+			World->ServerTravel(TEXT("L_Expanse"));
+		}
+	}
+}
+
+void ASXGM_Lobby::Logout(AController* Exiting)
+{
+	Super::Logout(Exiting);
+
+	ASXUIPC_Lobby* LobbyPC = Cast<ASXUIPC_Lobby>(Exiting);
+	if (IsValid(LobbyPC) == true)
+	{
+		AllPlayerControllers.Remove(LobbyPC);
+	}
 }

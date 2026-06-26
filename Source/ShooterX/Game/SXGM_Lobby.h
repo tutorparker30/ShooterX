@@ -27,7 +27,23 @@ public:
 	
 	virtual void StartPlay() override;
 
+	virtual void Tick(float DeltaSeconds) override;
+
+	virtual void Logout(AController* Exiting) override;
+
 public:
 	TArray<TWeakObjectPtr<ASXUIPC_Lobby>> AllPlayerControllers;
+
+	UPROPERTY(EditAnywhere)
+	int32 RequiredPlayerCount = 2;
+
+	UPROPERTY(EditAnywhere)
+	float InitialRemainTimeForPlaying = 5.f;
+
+	UPROPERTY(VisibleAnywhere)
+	float RemainTimeForPlaying = 5.f;
+
+private:
+	bool bIsTravelling = false;
 
 };
