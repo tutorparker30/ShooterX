@@ -6,9 +6,11 @@
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Net/UnrealNetwork.h"
+#include "ShooterX.h"
 
 ASXLobbyPlayerCharacter::ASXLobbyPlayerCharacter()
 {
+	SX_LOG_NET(LogSXNet, Log, TEXT(""));
 }
 
 void ASXLobbyPlayerCharacter::BeginPlay()
@@ -70,44 +72,71 @@ void ASXLobbyPlayerCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeP
 	DOREPLIFETIME(ThisClass, SelectedMeshMaterialIndex);
 }
 
+void ASXLobbyPlayerCharacter::PossessedBy(AController* NewController)
+{
+	//SX_LOG_NET(LogSXNet, Log, TEXT("Begin"));
+	SX_LOG_NET_ROLE(LogSXNet, Log, TEXT("Begin"));
+
+	AActor* OwnerActor = GetOwner();
+	if (IsValid(OwnerActor) == true)
+	{
+		SX_LOG_NET(LogSXNet, Log, TEXT("OwnerActor Name: %s"), *OwnerActor->GetName());
+	}
+	else
+	{
+		SX_LOG_NET(LogSXNet, Log, TEXT("There is no OwnerActor."));
+	}
+
+	Super::PossessedBy(NewController);
+
+	OwnerActor = GetOwner();
+	if (IsValid(OwnerActor) == true)
+	{
+		SX_LOG_NET(LogSXNet, Log, TEXT("OwnerActor Name: %s"), *OwnerActor->GetName());
+	}
+	else
+	{
+		SX_LOG_NET(LogSXNet, Log, TEXT("There is no OwnerActor."));
+	}
+
+	//SX_LOG_NET(LogSXNet, Log, TEXT("End"));
+	SX_LOG_NET_ROLE(LogSXNet, Log, TEXT("End"));
+}
+
+void ASXLobbyPlayerCharacter::OnRep_Owner()
+{
+	SX_LOG_NET(LogSXNet, Log, TEXT("Begin"));
+
+	Super::OnRep_Owner();
+
+	AActor* OwnerActor = GetOwner();
+	if (IsValid(OwnerActor) == true)
+	{
+		SX_LOG_NET(LogSXNet, Log, TEXT("OwnerActor Name: %s"), *OwnerActor->GetName());
+	}
+	else
+	{
+		SX_LOG_NET(LogSXNet, Log, TEXT("There is no OwnerActor."));
+	}
+
+	SX_LOG_NET(LogSXNet, Log, TEXT("End"));
+}
+
+void ASXLobbyPlayerCharacter::PostNetInit()
+{
+	SX_LOG_NET(LogSXNet, Log, TEXT("Begin"));
+
+	Super::PostNetInit();
+
+	SX_LOG_NET(LogSXNet, Log, TEXT("End"));
+}
+
 void ASXLobbyPlayerCharacter::SetLocalCharacterSkeletalMesh(int32 InPrevOrNext)
 {
 	if (IsLocallyControlled() == true)
 	{
 		ServerRPCSetCharacterSkeletalMesh(InPrevOrNext);
 	}
-
-	/*
-	if (CharacterSkeletalMeshComponent.IsValid() == false)
-	{
-		return;
-	}
-
-	const int32 MaterialCount = FMath::Min(
-		LoadedMaterialInstance0Assets.Num(),
-		LoadedMaterialInstance1Assets.Num()
-	);
-
-	if (MaterialCount <= 0)
-	{
-		return;
-	}
-
-	SelectedMeshMaterialIndex += InPrevOrNext;
-
-	if (SelectedMeshMaterialIndex < 0)
-	{
-		SelectedMeshMaterialIndex = MaterialCount - 1;
-	}
-
-	if (MaterialCount <= SelectedMeshMaterialIndex)
-	{
-		SelectedMeshMaterialIndex = 0;
-	}
-
-	CharacterSkeletalMeshComponent->SetMaterial(1, LoadedMaterialInstance0Assets[SelectedMeshMaterialIndex].Get());
-	CharacterSkeletalMeshComponent->SetMaterial(0, LoadedMaterialInstance1Assets[SelectedMeshMaterialIndex].Get());
-	*/
 }
 
 void ASXLobbyPlayerCharacter::ServerRPCSetCharacterSkeletalMesh_Implementation(int32 InPrevOrNext)

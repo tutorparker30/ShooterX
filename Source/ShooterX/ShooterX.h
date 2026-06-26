@@ -73,3 +73,23 @@ public:
 	}
 
 };
+
+#pragma region NetLogging
+
+SHOOTERX_API DECLARE_LOG_CATEGORY_EXTERN(LogSXNet, Log, All);
+
+// this가 AActor 자식 클래스 객체일때만 사용 가능.
+#if WITH_EDITOR
+#define SX_NETMODE ((GetNetMode() == ENetMode::NM_Client) ? *FString::Printf(TEXT("Client%02d"), UE::GetPlayInEditorID()) : ((GetNetMode() == ENetMode::NM_Standalone) ? TEXT("StandAlone") : TEXT("Server")))
+#else
+#define SX_NETMODE ((GetNetMode() == ENetMode::NM_Client) ? TEXT("Client") : ((GetNetMode() == ENetMode::NM_Standalone) ? TEXT("StandAlone") : TEXT("Server")))
+#endif
+
+#define SX_CURRENT_FUNCTION (ANSI_TO_TCHAR(__FUNCTION__))
+#define SX_LOG_NET(LogCategory, Verbosity, Format, ...) UE_LOG(LogCategory, Verbosity, TEXT("[%s] %s %s"), SX_NETMODE, SX_CURRENT_FUNCTION, *FString::Printf(Format, ##__VA_ARGS__))
+
+#define SX_LOCAL_ROLE *(UEnum::GetValueAsString(TEXT("Engine.ENetRole"), GetLocalRole()))
+#define SX_REMOTE_ROLE *(UEnum::GetValueAsString(TEXT("Engine.ENetRole"), GetRemoteRole()))
+#define SX_LOG_NET_ROLE(LogCat, Verbosity, Format, ...) UE_LOG(LogCat, Verbosity, TEXT("[%s][%s/%s] %s %s"), SX_NETMODE, SX_LOCAL_ROLE, SX_REMOTE_ROLE, SX_CURRENT_FUNCTION, *FString::Printf(Format, ##__VA_ARGS__))
+
+#pragma endregion
