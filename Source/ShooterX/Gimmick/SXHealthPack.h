@@ -31,6 +31,14 @@ public:
 	UFUNCTION()
 	void OnEffectFinish(UNiagaraComponent* NiagaraComponent);
 
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+
+	virtual bool IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const override;
+
+private:
+	UFUNCTION()
+	void OnRep_ServerRotationYaw();
+
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess), Category = "ShooterX|SXHealthPack")
 	float HealAmount;
@@ -62,5 +70,15 @@ private:
 
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UNiagaraComponent> NiagaraComponent;
+
+	//UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_ServerRotationYaw)
+	float ServerRotationYaw;
+
+	float NetUpdatePeriod;
+
+	float AccDeltaSecondSinceReplicated = 0.f;
+
+	float NetCullDistance = 1000.f;
 
 };
