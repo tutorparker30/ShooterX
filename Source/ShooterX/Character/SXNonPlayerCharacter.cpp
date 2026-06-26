@@ -68,7 +68,12 @@ void ASXNonPlayerCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (IsValid(HPTextWidgetComponent) == true && GetNetMode() != NM_DedicatedServer)
+	if (GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+
+	if (IsValid(HPTextWidgetComponent) == true)
 	{
 		FVector WidgetComponentLocation = HPTextWidgetComponent->GetComponentLocation();
 		FVector LocalPlayerCameraLocation = UGameplayStatics::GetPlayerCameraManager(this, 0)->GetCameraLocation();
