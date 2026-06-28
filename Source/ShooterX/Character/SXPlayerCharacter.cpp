@@ -29,7 +29,7 @@
 ASXPlayerCharacter::ASXPlayerCharacter()
 {
 	//PrimaryActorTick.bCanEverTick = false;
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
 	SpringArmComponent->SetupAttachment(RootComponent);
@@ -163,6 +163,8 @@ void ASXPlayerCharacter::InputAttackMelee(const FInputActionValue& InValue)
 		ensure(FMath::IsWithinInclusive<int32>(CurrentComboCount, 1, MaxComboCount));
 		bIsAttackKeyPressed = true;
 	}
+
+	ServerRPCMeleeAttack();
 }
 
 void ASXPlayerCharacter::InputAttackRanged(const FInputActionValue& InValue)
@@ -177,7 +179,6 @@ void ASXPlayerCharacter::InputAttackRanged(const FInputActionValue& InValue)
 
 void ASXPlayerCharacter::InputMenu(const FInputActionValue& InValue)
 {
-	//UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("ASXPlayerCharacter::InputMenu() has been called.")));
 	ASXPlayerController* PlayerController = GetController<ASXPlayerController>();
 	if (true == IsValid(PlayerController))
 	{
@@ -298,14 +299,21 @@ void ASXPlayerCharacter::Fire()
 	FHitResult HitResult;
 	bool bHit = TraceBullet(MuzzleLocation, AimLocation, HitResult);
 
+	/*
 	if (bHit == true)
 	{
 		ApplyHitDamage(HitResult);
 	}
+	*/
 
 	PlayFireAnimation();
 
 	DrawFire(MuzzleLocation, HitResult, bHit);
+
+	if (IsLocallyControlled() == true)
+	{
+		ServerRPCFire(MuzzleLocation, HitResult, bHit);
+	}
 }
 
 bool ASXPlayerCharacter::GetAimLocation(FVector& OutAimLocation) const
@@ -400,6 +408,33 @@ void ASXPlayerCharacter::DrawFire(const FVector& InMuzzleLocation, const FHitRes
 	DrawDebugLine(GetWorld(), InMuzzleLocation, EndLocation, FColor::White, false, 0.1f, 0, 2.f);
 }
 
+void ASXPlayerCharacter::ServerRPCFire_Implementation(const FVector& InMuzzleLocation, const FHitResult& InHitResult, bool bHit)
+{
+	if (bHit == true)
+	{
+		ApplyHitDamage(InHitResult);
+	}
+
+	MulticastRPCFire(InMuzzleLocation, InHitResult, bHit);
+	DrawFire(InMuzzleLocation, InHitResult, bHit);
+}
+
+void ASXPlayerCharacter::MulticastRPCFire_Implementation(const FVector& InMuzzleLocation, const FHitResult& InHitResult, bool bHit)
+{
+	if (HasAuthority() == true)
+	{
+		return;
+	}
+
+	if (IsLocallyControlled() == true)
+	{
+		return;
+	}
+
+	PlayFireAnimation();
+	DrawFire(InMuzzleLocation, InHitResult, bHit);
+}
+
 void ASXPlayerCharacter::ServerRPCSpawnLandMine_Implementation()
 {
 	if (IsValid(LandMineClass) == true)
@@ -417,4 +452,45 @@ void ASXPlayerCharacter::ServerRPCSpawnLandMine_Implementation()
 bool ASXPlayerCharacter::ServerRPCSpawnLandMine_Validate()
 {
 	return true;
+}
+
+void ASXPlayerCharacter::ServerRPCMeleeAttack_Implementation()
+{
+	if (IsLocallyControlled() == false)
+	{
+		if (0 == CurrentComboCount)
+		{
+			BeginAttack();
+		}
+		else
+		{
+			ensure(FMath::IsWithinInclusive<int32>(CurrentComboCount, 1, MaxComboCount));
+			bIsAttackKeyPressed = true;
+		}
+	}
+
+	MulticastRPCMeleeAttack();
+}
+
+void ASXPlayerCharacter::MulticastRPCMeleeAttack_Implementation()
+{
+	if (HasAuthority() == true)
+	{
+		return;
+	}
+
+	if (IsLocallyControlled() == true)
+	{
+		return;
+	}
+
+	if (0 == CurrentComboCount)
+	{
+		BeginAttack();
+	}
+	else
+	{
+		ensure(FMath::IsWithinInclusive<int32>(CurrentComboCount, 1, MaxComboCount));
+		bIsAttackKeyPressed = true;
+	}
 }

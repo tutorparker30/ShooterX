@@ -28,11 +28,24 @@ public:
 
 	bool IsDead() const { return bIsDead; }
 
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+
+	void TakeBuff(float InBuffValue);
+
+protected:
+	UFUNCTION()
+	void OnRep_MaxHP();
+
+	UFUNCTION()
+	void OnRep_CurrentHP();
+
 public:
-	UPROPERTY()
+	//UPROPERTY()
+	UPROPERTY(ReplicatedUsing = OnRep_MaxHP)
 	float MaxHP;
 
-	UPROPERTY(Transient)
+	//UPROPERTY(Transient)
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentHP)
 	float CurrentHP;
 
 	UPROPERTY(Transient)

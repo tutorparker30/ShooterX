@@ -129,6 +129,12 @@ private:
 
 	void DrawFire(const FVector& InMuzzleLocation, const FHitResult& InHitResult, bool bHit);
 
+	UFUNCTION(Server, Reliable)
+	void ServerRPCFire(const FVector& InMuzzleLocation, const FHitResult& InHitResult, bool bHit);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCFire(const FVector& InMuzzleLocation, const FHitResult& InHitResult, bool bHit);
+
 #pragma endregion
 
 #pragma region LandMine
@@ -140,6 +146,19 @@ private:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<ASXLandMine> LandMineClass;
+
+#pragma endregion
+
+#pragma region MeleeAttack
+
+private:
+	UFUNCTION(Server, Reliable)
+	void ServerRPCMeleeAttack();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPCMeleeAttack();
+
+	void PlayMeleeAttackMontage();
 
 #pragma endregion
 

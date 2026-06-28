@@ -10,6 +10,8 @@
 #include "NiagaraSystem.h"
 #include "Net/UnrealNetwork.h"
 #include "ShooterX.h"
+#include "Character/SXPlayerCharacter.h"
+#include "Component/SXStatusComponent.h"
 
 ASXHealthPack::ASXHealthPack()
 	: HealAmount(100.f)
@@ -106,6 +108,15 @@ void ASXHealthPack::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAc
 	NiagaraComponent->Activate(true);
 	BodyStaticMeshComponent->SetHiddenInGame(true);
 	SetActorEnableCollision(false);
+
+	ASXCharacterBase* OverlappingPC = Cast<ASXCharacterBase>(OtherActor);
+	if (IsValid(OverlappingPC) == true)
+	{
+		if (USXStatusComponent* StatusComponent = OverlappingPC->GetStatusComponent())
+		{
+			StatusComponent->TakeBuff(50.f);
+		}
+	}
 }
 
 void ASXHealthPack::OnEffectFinish(UNiagaraComponent* FinishedNiagaraComponent)

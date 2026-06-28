@@ -92,4 +92,8 @@ SHOOTERX_API DECLARE_LOG_CATEGORY_EXTERN(LogSXNet, Log, All);
 #define SX_REMOTE_ROLE *(UEnum::GetValueAsString(TEXT("Engine.ENetRole"), GetRemoteRole()))
 #define SX_LOG_NET_ROLE(LogCat, Verbosity, Format, ...) UE_LOG(LogCat, Verbosity, TEXT("[%s][%s/%s] %s %s"), SX_NETMODE, SX_LOCAL_ROLE, SX_REMOTE_ROLE, SX_CURRENT_FUNCTION, *FString::Printf(Format, ##__VA_ARGS__))
 
+#define SX_SUBOBJECT_LOCAL_ROLE *(UEnum::GetValueAsString(TEXT("Engine.ENetRole"), GetOwner()->GetLocalRole()))
+#define SX_SUBOBJECT_REMOTE_ROLE *(UEnum::GetValueAsString(TEXT("Engine.ENetRole"), GetOwner()->GetRemoteRole()))
+#define SX_LOG_SUBOBJECT_NET_ROLE(LogCat, Verbosity, Format, ...) UE_LOG(LogCat, Verbosity, TEXT("[%s][%s/%s] %s %s"), SX_NETMODE, SX_SUBOBJECT_LOCAL_ROLE, SX_SUBOBJECT_REMOTE_ROLE, SX_CURRENT_FUNCTION, *FString::Printf(Format, ##__VA_ARGS__))
+
 #pragma endregion
