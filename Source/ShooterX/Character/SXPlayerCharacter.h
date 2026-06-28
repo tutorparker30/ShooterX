@@ -31,6 +31,10 @@ public:
 
 	virtual void BeginPlay() override;
 
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+
+	virtual void Tick(float DeltaTime) override;
+
 protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
@@ -44,6 +48,9 @@ protected:
 #pragma endregion
 
 #pragma region Input
+
+public:
+	float GetCurrentAimPitch() const { return CurrentAimPitch; }
 
 private:
 	void InputMove(const FInputActionValue& InValue);
@@ -60,12 +67,20 @@ private:
 
 	void InputSpawnLandMine(const FInputActionValue& InValue);
 
+	UFUNCTION(Server, Unreliable) // 한 두번 정도는 씹혀도 되기 때문.
+	void ServerRPCUpdateAimValue(const float& InAimPitchValue);
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess))
 	TObjectPtr<USXInputConfig> PlayerCharacterInputConfig;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess))
 	TObjectPtr<UInputMappingContext> PlayerCharacterInputMappingContext;
+
+	UPROPERTY(Replicated)
+	float CurrentAimPitch = 0.f;
+
+	float PreviousAimPitch = 0.f;
 
 #pragma endregion
 
@@ -97,7 +112,7 @@ protected:
 
 #pragma endregion
 
-#pragma region
+#pragma region RangedAttack
 
 private:
 	bool CanFire() const;

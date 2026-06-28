@@ -24,9 +24,11 @@
 #include "ShooterX.h"
 #include "Controller/SXPlayerController.h"
 #include "Gimmick/SXLandMine.h"
+#include "Net/UnrealNetwork.h"
 
 ASXPlayerCharacter::ASXPlayerCharacter()
 {
+	//PrimaryActorTick.bCanEverTick = false;
 	PrimaryActorTick.bCanEverTick = false;
 
 	SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
@@ -73,6 +75,32 @@ void ASXPlayerCharacter::BeginPlay()
 		{
 			Subsystem->AddMappingContext(PlayerCharacterInputMappingContext, 0);
 		}
+	}
+}
+
+void ASXPlayerCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ThisClass, CurrentAimPitch);
+}
+
+void ASXPlayerCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (IsValid(GetController()) == true)
+	{
+		PreviousAimPitch = CurrentAimPitch;
+
+		FRotator ControlRotation = GetController()->GetControlRotation();
+		float NormalizedPitch = FRotator::NormalizeAxis(ControlRotation.Pitch);
+		CurrentAimPitch = FMath::Clamp(NormalizedPitch, -90.0f, 90.0f);
+	}
+
+	if (IsLocallyControlled() == true && PreviousAimPitch != CurrentAimPitch)
+	{
+		ServerRPCUpdateAimValue(CurrentAimPitch);
 	}
 }
 
@@ -171,6 +199,11 @@ void ASXPlayerCharacter::InputSpawnLandMine(const FInputActionValue& InValue)
 	{
 		ServerRPCSpawnLandMine();
 	}
+}
+
+void ASXPlayerCharacter::ServerRPCUpdateAimValue_Implementation(const float& InAimPitchValue)
+{
+	CurrentAimPitch = InAimPitchValue;
 }
 
 void ASXPlayerCharacter::OnMeshMaterialLoadCompleted(FSoftObjectPath Path01, FSoftObjectPath Path02)

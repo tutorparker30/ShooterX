@@ -7,6 +7,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Character/SXNonPlayerCharacter.h"
 #include "Component/SXStatusComponent.h"
+#include "Character/SXPlayerCharacter.h"
 
 void USXAnimInstance::NativeInitializeAnimation()
 {
@@ -43,10 +44,16 @@ void USXAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 		bIsUnarmed = OwnerCharacter->GetCurrentWeaponAttackAnimMontage() == nullptr ? true : false;
 
+		
 		if (APlayerController* OwnerPlayerController = Cast<APlayerController>(OwnerCharacter->GetController()))
 		{
 			NormalizedCurrentPitch = UKismetMathLibrary::NormalizeAxis(OwnerPlayerController->GetControlRotation().Pitch);
 		}
+		
+		/*if (ASXPlayerCharacter* OwnerPC = Cast<ASXPlayerCharacter>(OwnerCharacter))
+		{
+			NormalizedCurrentPitch = OwnerPC->GetCurrentAimPitch();
+		}*/
 	}
 }
 
