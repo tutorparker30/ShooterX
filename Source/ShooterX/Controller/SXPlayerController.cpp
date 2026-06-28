@@ -49,6 +49,11 @@ void ASXPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (IsLocalController() == false)
+	{
+		return;
+	}
+
 	FInputModeGameOnly InputModeGameOnly;
 	SetInputMode(InputModeGameOnly);
 

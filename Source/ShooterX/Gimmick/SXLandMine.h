@@ -9,6 +9,7 @@
 class UBoxComponent;
 class UStaticMeshComponent;
 class UNiagaraComponent;
+class UMaterial;
 
 UCLASS()
 class SHOOTERX_API ASXLandMine : public AActor
@@ -20,6 +21,8 @@ public:
 
 	virtual void BeginPlay() override;
 
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+
 private:
 	UFUNCTION()
 	void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
@@ -30,6 +33,9 @@ private:
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPCSpawnEffect();
+
+	UFUNCTION()
+	void OnRep_IsExploded();
 
 private:
 	UPROPERTY(EditDefaultsOnly)
@@ -43,5 +49,15 @@ private:
 
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UNiagaraComponent> NiagaraComponent;
+
+	// UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_IsExploded)
+	uint8 bIsExploded : 1;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Meta = (AllowPrivateAccess))
+	float NetCullDistance;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Meta = (AllowPrivateAccess))
+	TObjectPtr<UMaterial> ExplodedMaterial;
 
 };

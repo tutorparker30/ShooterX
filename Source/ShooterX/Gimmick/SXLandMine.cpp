@@ -6,8 +6,11 @@
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
 #include "ShooterX.h"
+#include "Net/UnrealNetwork.h"
 
 ASXLandMine::ASXLandMine()
+	: bIsExploded(false)
+	, NetCullDistance(1000.f)
 {
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
@@ -30,6 +33,8 @@ ASXLandMine::ASXLandMine()
 	NiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("NiagaraComponent"));
 	NiagaraComponent->SetupAttachment(GetRootComponent());
 	NiagaraComponent->SetAutoActivate(false);
+
+	SetNetCullDistanceSquared(NetCullDistance * NetCullDistance);
 }
 
 void ASXLandMine::BeginPlay()
@@ -57,20 +62,37 @@ void ASXLandMine::BeginPlay()
 	}
 }
 
+void ASXLandMine::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ThisClass, bIsExploded);
+}
+
 void ASXLandMine::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepHitResult)
 {
 	NiagaraComponent->OnSystemFinished.AddDynamic(this, &ThisClass::OnEffectFinish);
 
-	StaticMeshComponent->SetHiddenInGame(true);
 	SetActorEnableCollision(false);
-	//NiagaraComponent->Activate(true);
+
+	if (bIsExploded == false && GetWorld()->GetNetMode() != NM_DedicatedServer)
+	{
+		NiagaraComponent->Activate(true);
+	}
 
 	if (HasAuthority() == true)
 	{
 		ShooterXFunctionLibrary::MyPrintString(this, FString::Printf(TEXT("Run on server.")), 5.f, FColor::Green);
 
 		MulticastRPCSpawnEffect();
+
+		if (bIsExploded == false)
+		{
+			bIsExploded = true;
+		}
+
+		OnRep_IsExploded();
 	}
 	else
 	{
@@ -91,19 +113,27 @@ void ASXLandMine::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActo
 
 void ASXLandMine::OnEffectFinish(UNiagaraComponent* FinishedNiagaraComponent)
 {
-	Destroy();
+	//Destroy();
+	if (HasAuthority() == true)
+	{
+		Destroy();
+	}
 }
 
 void ASXLandMine::MulticastRPCSpawnEffect_Implementation()
 {
-	UWorld* World = GetWorld();
-	if (IsValid(World) == false)
+	/*
+	if (IsValid(ExplodedMaterial) == true)
 	{
-		return;
+		StaticMeshComponent->SetMaterial(0, ExplodedMaterial);
 	}
+	*/
+}
 
-	if (World->GetNetMode() != NM_DedicatedServer)
+void ASXLandMine::OnRep_IsExploded()
+{
+	if (true == bIsExploded && IsValid(ExplodedMaterial) == true)
 	{
-		NiagaraComponent->Activate(true);
+		StaticMeshComponent->SetMaterial(0, ExplodedMaterial);
 	}
 }
