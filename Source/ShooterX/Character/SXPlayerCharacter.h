@@ -14,6 +14,7 @@ class USXInputConfig;
 class UInputMappingContext;
 class UNiagaraComponent;
 struct FStreamableHandle;
+class ASXLandMine;
 
 /**
  *
@@ -56,6 +57,8 @@ private:
 	void TryFire();
 
 	void InputMenu(const FInputActionValue& InValue);
+
+	void InputSpawnLandMine(const FInputActionValue& InValue);
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess))
@@ -113,5 +116,16 @@ private:
 
 #pragma endregion
 
+#pragma region LandMine
+
+private:
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPCSpawnLandMine();
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSubclassOf<ASXLandMine> LandMineClass;
+
+#pragma endregion
 
 };

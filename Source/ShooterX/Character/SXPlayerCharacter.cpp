@@ -23,6 +23,7 @@
 #include "Engine/DamageEvents.h"
 #include "ShooterX.h"
 #include "Controller/SXPlayerController.h"
+#include "Gimmick/SXLandMine.h"
 
 ASXPlayerCharacter::ASXPlayerCharacter()
 {
@@ -73,38 +74,6 @@ void ASXPlayerCharacter::BeginPlay()
 			Subsystem->AddMappingContext(PlayerCharacterInputMappingContext, 0);
 		}
 	}
-
-	/*
-	const USXCharacterMaterialManager* CDO = GetDefault<USXCharacterMaterialManager>();
-
-	const int32 MaterialPathCount = CDO->PlayerCharacterMeshMaterialPaths.Num();
-
-	if (MaterialPathCount < 2 || MaterialPathCount % 2 != 0)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Invalid PlayerCharacterMeshMaterialPaths count."));
-		return;
-	}
-
-	const int32 PairCount = MaterialPathCount / 2;
-	const int32 PairIndex = FMath::RandRange(0, PairCount - 1);
-	const int32 MaterialIndex = PairIndex * 2;
-
-	CurrentPlayerCharacterMeshMaterialPath01 = CDO->PlayerCharacterMeshMaterialPaths[MaterialIndex];
-	CurrentPlayerCharacterMeshMaterialPath02 = CDO->PlayerCharacterMeshMaterialPaths[MaterialIndex + 1];
-
-	const FSoftObjectPath Path01 = CurrentPlayerCharacterMeshMaterialPath01;
-	const FSoftObjectPath Path02 = CurrentPlayerCharacterMeshMaterialPath02;
-
-	AssetStreamableHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
-		{ Path01, Path02 },
-		FStreamableDelegate::CreateUObject(
-			this,
-			&ThisClass::OnMeshMaterialLoadCompleted,
-			Path01,
-			Path02
-		)
-	);
-	*/
 }
 
 void ASXPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -121,6 +90,7 @@ void ASXPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInputComponent->BindAction(PlayerCharacterInputConfig->AttackMelee, ETriggerEvent::Started, this, &ThisClass::InputAttackMelee);
 		EnhancedInputComponent->BindAction(PlayerCharacterInputConfig->AttackRanged, ETriggerEvent::Started, this, &ThisClass::InputAttackRanged);
 		EnhancedInputComponent->BindAction(PlayerCharacterInputConfig->Menu, ETriggerEvent::Started, this, &ThisClass::InputMenu);
+		EnhancedInputComponent->BindAction(PlayerCharacterInputConfig->SpawnLandMine, ETriggerEvent::Started, this, &ThisClass::InputSpawnLandMine);
 	}
 }
 
@@ -184,6 +154,22 @@ void ASXPlayerCharacter::InputMenu(const FInputActionValue& InValue)
 	if (true == IsValid(PlayerController))
 	{
 		PlayerController->ToggleInGameMenu();
+	}
+}
+
+void ASXPlayerCharacter::InputSpawnLandMine(const FInputActionValue& InValue)
+{
+	/*
+	if (IsValid(LandMineClass) == true)
+	{
+		FVector SpawnedLocation = (GetActorLocation() + GetActorForwardVector() * 300.f) - FVector(0.f, 0.f, 90.f);
+		ASXLandMine* SpawnedLandMine = GetWorld()->SpawnActor<ASXLandMine>(LandMineClass, SpawnedLocation, FRotator::ZeroRotator);
+	}
+	*/
+
+	if (IsLocallyControlled() == true)
+	{
+		ServerRPCSpawnLandMine();
 	}
 }
 
@@ -379,4 +365,23 @@ void ASXPlayerCharacter::DrawFire(const FVector& InMuzzleLocation, const FHitRes
 	FVector EndLocation = bHit == true ? InHitResult.ImpactPoint : InHitResult.TraceEnd;
 
 	DrawDebugLine(GetWorld(), InMuzzleLocation, EndLocation, FColor::White, false, 0.1f, 0, 2.f);
+}
+
+void ASXPlayerCharacter::ServerRPCSpawnLandMine_Implementation()
+{
+	if (IsValid(LandMineClass) == true)
+	{
+		FVector SpawnedLocation = (GetActorLocation() + GetActorForwardVector() * 300.f) - FVector(0.f, 0.f, 90.f);
+		ASXLandMine* SpawnedLandMine = GetWorld()->SpawnActor<ASXLandMine>(LandMineClass, SpawnedLocation, FRotator::ZeroRotator);
+		SpawnedLandMine->SetOwner(this);
+			// 내 캐릭터는 서버와 내 컴퓨터 뿐만 아니라 다른 컴퓨터에도 존재함.
+			// 만약 SpawnedLandMine->SetOwner(GetController())라고 작성한다면?
+			// 내 컨트롤러는 서버 컴퓨터와 내 컴퓨터에만 존재함. 
+			// 다른 컴퓨터에는 내 컨트롤러가 존재하지 않음에 주의. Owner가 제대로 설정되지 않을 수 있음.
+	}
+}
+
+bool ASXPlayerCharacter::ServerRPCSpawnLandMine_Validate()
+{
+	return true;
 }

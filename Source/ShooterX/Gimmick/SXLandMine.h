@@ -18,6 +18,8 @@ class SHOOTERX_API ASXLandMine : public AActor
 public:
 	ASXLandMine();
 
+	virtual void BeginPlay() override;
+
 private:
 	UFUNCTION()
 	void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
@@ -25,6 +27,9 @@ private:
 
 	UFUNCTION()
 	void OnEffectFinish(UNiagaraComponent* NiagaraComponent);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastRPCSpawnEffect();
 
 private:
 	UPROPERTY(EditDefaultsOnly)

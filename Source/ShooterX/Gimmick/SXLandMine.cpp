@@ -5,10 +5,12 @@
 #include "Components/StaticMeshComponent.h"
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
+#include "ShooterX.h"
 
 ASXLandMine::ASXLandMine()
 {
 	PrimaryActorTick.bCanEverTick = false;
+	bReplicates = true;
 
 	SceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("SceneComponent"));
 	SetRootComponent(SceneComponent);
@@ -18,7 +20,6 @@ ASXLandMine::ASXLandMine()
 	BoxComponent->SetRelativeScale3D(FVector(0.15f, 0.15f, 0.35f));
 	BoxComponent->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
 	BoxComponent->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnOverlapBegin);
-	//BoxComponent->SetCollisionProfileName(FName("Trigger"));	
 	BoxComponent->SetCollisionProfileName(FName(TEXT("SXGimmick")));
 
 	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMeshComponent"));
@@ -29,15 +30,31 @@ ASXLandMine::ASXLandMine()
 	NiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("NiagaraComponent"));
 	NiagaraComponent->SetupAttachment(GetRootComponent());
 	NiagaraComponent->SetAutoActivate(false);
+}
 
-	/*
-	static ConstructorHelpers::FObjectFinder<UNiagaraSystem> EffectTemplate(TEXT("오브젝트 패스"));
-	if (EffectTemplate.Object)
+void ASXLandMine::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (HasAuthority() == true)
 	{
-		NiagaraComponent->SetAsset(EffectTemplate.Object);
-		NiagaraComponent->SetAutoActivate(false);
+		ShooterXFunctionLibrary::MyPrintString(this, FString::Printf(TEXT("Run on server.")), 5.f, FColor::Green);
 	}
-	*/
+	else
+	{
+		APawn* OwnerPawn = Cast<APawn>(GetOwner());
+		if (IsValid(OwnerPawn) == true)
+		{
+			if (OwnerPawn->IsLocallyControlled() == true)
+			{
+				ShooterXFunctionLibrary::MyPrintString(this, FString::Printf(TEXT("Run on owning client.")), 5.f, FColor::Green);
+			}
+			else
+			{
+				ShooterXFunctionLibrary::MyPrintString(this, FString::Printf(TEXT("Run on other client.")), 5.f, FColor::Green);
+			}
+		}
+	}
 }
 
 void ASXLandMine::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
@@ -45,12 +62,48 @@ void ASXLandMine::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActo
 {
 	NiagaraComponent->OnSystemFinished.AddDynamic(this, &ThisClass::OnEffectFinish);
 
-	NiagaraComponent->Activate(true);
 	StaticMeshComponent->SetHiddenInGame(true);
 	SetActorEnableCollision(false);
+	//NiagaraComponent->Activate(true);
+
+	if (HasAuthority() == true)
+	{
+		ShooterXFunctionLibrary::MyPrintString(this, FString::Printf(TEXT("Run on server.")), 5.f, FColor::Green);
+
+		MulticastRPCSpawnEffect();
+	}
+	else
+	{
+		APawn* OwnerPawn = Cast<APawn>(GetOwner());
+		if (IsValid(OwnerPawn) == true)
+		{
+			if (OwnerPawn->IsLocallyControlled() == true)
+			{
+				ShooterXFunctionLibrary::MyPrintString(this, FString::Printf(TEXT("Run on owning client.")), 5.f, FColor::Green);
+			}
+			else
+			{
+				ShooterXFunctionLibrary::MyPrintString(this, FString::Printf(TEXT("Run on other client.")), 5.f, FColor::Green);
+			}
+		}
+	}
 }
 
 void ASXLandMine::OnEffectFinish(UNiagaraComponent* FinishedNiagaraComponent)
 {
 	Destroy();
+}
+
+void ASXLandMine::MulticastRPCSpawnEffect_Implementation()
+{
+	UWorld* World = GetWorld();
+	if (IsValid(World) == false)
+	{
+		return;
+	}
+
+	if (World->GetNetMode() != NM_DedicatedServer)
+	{
+		NiagaraComponent->Activate(true);
+	}
 }
