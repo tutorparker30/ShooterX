@@ -7,6 +7,7 @@
 #include "SXPlayerController.generated.h"
 
 class USXHUD;
+class UUW_GameResult;
 
 /**
  *
@@ -23,8 +24,25 @@ public:
 
 	void ToggleInGameMenu();
 
+	void OnCharacterDead();
+
+	UFUNCTION(Client, Reliable)
+	void ClientRPCShowGameResultWidget(int32 InRanking);
+
+	UFUNCTION(Client, Reliable)
+	void ClientRPCReturnToTitle();
+
 protected:
 	virtual void BeginPlay() override;
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+public:
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
+	FText NotificationText;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = ASXPlayerController, Meta = (AllowPrivateAccess))
+	TSubclassOf<UUserWidget> NotificationTextUIClass;
 
 private:
 	UPROPERTY();
@@ -43,5 +61,8 @@ private:
 	TObjectPtr<UUserWidget> InGameMenuInstance;
 
 	bool bIsInGameMenuOn = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = ASXPlayerController, Meta = (AllowPrivateAccess))
+	TSubclassOf<UUW_GameResult> GameResultUIClass;
 
 };

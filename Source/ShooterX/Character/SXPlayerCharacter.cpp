@@ -25,6 +25,7 @@
 #include "Controller/SXPlayerController.h"
 #include "Gimmick/SXLandMine.h"
 #include "Net/UnrealNetwork.h"
+#include "Component/SXStatusComponent.h"
 
 ASXPlayerCharacter::ASXPlayerCharacter()
 {
@@ -76,6 +77,8 @@ void ASXPlayerCharacter::BeginPlay()
 			Subsystem->AddMappingContext(PlayerCharacterInputMappingContext, 0);
 		}
 	}
+
+	StatusComponent->OnOutOfCurrentHP.AddUObject(this, &ThisClass::OnCharacterDead);
 }
 
 void ASXPlayerCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -452,6 +455,15 @@ void ASXPlayerCharacter::ServerRPCSpawnLandMine_Implementation()
 bool ASXPlayerCharacter::ServerRPCSpawnLandMine_Validate()
 {
 	return true;
+}
+
+void ASXPlayerCharacter::OnCharacterDead()
+{
+	ASXPlayerController* PlayerController = GetController<ASXPlayerController>();
+	if (IsValid(PlayerController) == true && HasAuthority() == true)
+	{
+		PlayerController->OnCharacterDead();
+	}
 }
 
 void ASXPlayerCharacter::ServerRPCMeleeAttack_Implementation()

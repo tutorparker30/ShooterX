@@ -151,6 +151,10 @@ protected:
 
 #pragma region MeleeAttack
 
+public:
+	UFUNCTION()
+	void OnCharacterDead();
+
 private:
 	UFUNCTION(Server, Reliable)
 	void ServerRPCMeleeAttack();

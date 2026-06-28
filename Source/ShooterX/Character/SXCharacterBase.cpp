@@ -11,6 +11,9 @@
 #include "Engine/DamageEvents.h"
 #include "Component/SXStatusComponent.h"
 #include "Item/SXWeapon.h"
+#include "Game/SXGameModeBase.h"
+#include "Game/SXGameStateBase.h"
+#include "Kismet/GameplayStatics.h"
 
 int32 ASXCharacterBase::ShowAttackMeleeDebug = 0;
 
@@ -175,7 +178,12 @@ float ASXCharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 {
 	float FinalDamageAmount = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	StatusComponent->ApplyDamage(FinalDamageAmount);
+	//StatusComponent->ApplyDamage(FinalDamageAmount);
+	ASXGameStateBase* SXGameState = Cast<ASXGameStateBase>(UGameplayStatics::GetGameState(this));
+	if (IsValid(SXGameState) == true && SXGameState->MatchState == EMatchState::Playing)
+	{
+		StatusComponent->ApplyDamage(FinalDamageAmount);
+	}
 
 	if (StatusComponent->IsDead() == true)
 	{
