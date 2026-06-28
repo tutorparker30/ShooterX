@@ -10,7 +10,7 @@
 #include "NiagaraSystem.h"
 #include "Net/UnrealNetwork.h"
 #include "ShooterX.h"
-#include "Character/SXPlayerCharacter.h"
+#include "Character/SXCharacterBase.h"
 #include "Component/SXStatusComponent.h"
 
 ASXHealthPack::ASXHealthPack()
