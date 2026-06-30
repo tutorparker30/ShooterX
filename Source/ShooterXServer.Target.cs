@@ -3,11 +3,11 @@
 using UnrealBuildTool;
 using System.Collections.Generic;
 
-public class ShooterXClientTarget : TargetRules
+public class ShooterXServerTarget : TargetRules
 {
-	public ShooterXClientTarget( TargetInfo Target) : base(Target)
+	public ShooterXServerTarget( TargetInfo Target) : base(Target)
 	{
-		Type = TargetType.Client;
+		Type = TargetType.Server;
 		DefaultBuildSettings = BuildSettingsVersion.V6;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_7;
 		ExtraModuleNames.Add("ShooterX");

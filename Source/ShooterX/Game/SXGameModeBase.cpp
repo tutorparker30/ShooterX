@@ -228,6 +228,8 @@ void ASXGameModeBase::OnMainTimerElapsed()
 
 void ASXGameModeBase::NotifyToAllPlayer(const FString& NotificationString)
 {
+	RefreshPlayerControllers();
+
 	for (auto AlivePlayerController : AlivePlayerControllers)
 	{
 		AlivePlayerController->NotificationText = FText::FromString(NotificationString);
