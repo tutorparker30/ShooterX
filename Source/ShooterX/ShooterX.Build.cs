@@ -27,6 +27,9 @@ public class ShooterX : ModuleRules
 
 				// UI
 				"UMG", "Slate", "SlateCore",
+
+				// Online Subsystem
+				"OnlineSubsystem", "OnlineSubsystemUtils", "OnlineSubsystemNull",
 			}
 		);
 
