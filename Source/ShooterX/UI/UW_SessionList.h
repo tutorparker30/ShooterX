@@ -39,4 +39,6 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<UObject>> SessionListItems;
 
+	FDelegateHandle SessionSearchCompleteHandle;
+
 };

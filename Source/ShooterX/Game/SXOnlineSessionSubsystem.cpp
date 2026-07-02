@@ -5,6 +5,7 @@
 #include "OnlineSubsystem.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Kismet/GameplayStatics.h"
+#include "Online/OnlineSessionNames.h"
 
 void USXOnlineSessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -35,7 +36,7 @@ void USXOnlineSessionSubsystem::CreateSession(int32 MaxPlayers)
 	}
 
 	FOnlineSessionSettings SessionSettings;
-	SessionSettings.bIsLANMatch = false;
+	SessionSettings.bIsLANMatch = true;
 	SessionSettings.bShouldAdvertise = true;  // 세션 서버에 광고 (검색 허용)
 	SessionSettings.NumPublicConnections = MaxPlayers;
 	SessionSettings.bAllowJoinInProgress = true;
@@ -75,17 +76,7 @@ void USXOnlineSessionSubsystem::OnCreateSessionComplete(FName SessionName, bool 
 		return;
 	}
 
-	if (IsRunningDedicatedServer() == true)
-	{
-		// [데디서버] 이미 ServerDefaultMap(Lobby)을 실행 중이므로 별도 이동이 불필요하다.
-		// 특히 "listen" 옵션을 붙이면 데디서버가 리슨서버로 승격되어 버리므로 절대 붙이지 않는다.
-		UE_LOG(LogTemp, Log, TEXT("Dedicated session created. Waiting for players..."));
-	}
-	else
-	{
-		// [리슨서버] 방을 만든 클라이언트가 곧 호스트가 되도록 "listen" 옵션으로 맵을 연다.
-		UGameplayStatics::OpenLevel(GetWorld(), FName(TEXT("Lobby")), true, FString(TEXT("listen")));
-	}
+	UE_LOG(LogTemp, Log, TEXT("Dedicated session created. Waiting for players..."));
 }
 
 void USXOnlineSessionSubsystem::DestroySession()
@@ -102,7 +93,128 @@ void USXOnlineSessionSubsystem::DestroySession()
 	SessionManager->DestroySession(NAME_GameSession);
 }
 
+void USXOnlineSessionSubsystem::FindSessions()
+{
+	if (SessionManager.IsValid() == false)
+	{
+		return;
+	}
+
+	CombinedSearchResults.Empty();
+
+	// [통합 검색] 리슨서버(Lobby) 세션부터 1차로 검색을 시작한다.
+	// 완료 콜백(OnFindSessionsComplete)에서 이어서 데디서버(dedicated) 세션도 검색하여
+	// 두 결과를 하나의 목록으로 합친다.
+	StartSessionSearch(ESessionSearchPass::Lobby);
+}
+
+void USXOnlineSessionSubsystem::JoinSession(const FOnlineSessionSearchResult& InSearchResult)
+{
+	if (SessionManager.IsValid() == false)
+	{
+		return;
+	}
+
+	FOnJoinSessionCompleteDelegate JoinDelegate =
+		FOnJoinSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnJoinSessionComplete);
+	JoinCompleteDelegateHandle = SessionManager->AddOnJoinSessionCompleteDelegate_Handle(JoinDelegate);
+
+	const ULocalPlayer* LocalPlayer = GetGameInstance()->GetFirstGamePlayer();
+	SessionManager->JoinSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, InSearchResult);
+}
+
 void USXOnlineSessionSubsystem::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful)
 {
 	SessionManager->ClearOnDestroySessionCompleteDelegate_Handle(DestroyCompleteDelegateHandle);
+}
+
+void USXOnlineSessionSubsystem::StartSessionSearch(ESessionSearchPass InPass)
+{
+	CurrentSearchPass = InPass;
+
+	SessionSearch = MakeShared<FOnlineSessionSearch>();
+	SessionSearch->MaxSearchResults = 100;
+	SessionSearch->bIsLanQuery = true;
+
+	// [검색 대상에 따라 쿼리가 갈린다]
+	// - 리슨서버 세션: Lobby 기반으로 광고되므로 SEARCH_LOBBIES 로 찾는다.
+	// - 데디서버 세션: Lobby 를 쓰지 않으므로 SEARCH_LOBBIES 로는 검색되지 않는다.
+	//   대신 SEARCH_DEDICATED_ONLY 로 데디 세션만 조회한다.
+	if (InPass == ESessionSearchPass::Lobby)
+	{
+		SessionSearch->QuerySettings.Set(SEARCH_LOBBIES, true, EOnlineComparisonOp::Equals);
+	}
+	else
+	{
+		SessionSearch->QuerySettings.Set(SEARCH_DEDICATED_ONLY, true, EOnlineComparisonOp::Equals);
+	}
+
+	FOnFindSessionsCompleteDelegate FindDelegate =
+		FOnFindSessionsCompleteDelegate::CreateUObject(this, &ThisClass::OnFindSessionsComplete);
+	FindCompleteDelegateHandle = SessionManager->AddOnFindSessionsCompleteDelegate_Handle(FindDelegate);
+
+	const ULocalPlayer* LocalPlayer = GetGameInstance()->GetFirstGamePlayer();
+	SessionManager->FindSessions(*LocalPlayer->GetPreferredUniqueNetId(), SessionSearch.ToSharedRef());
+}
+
+void USXOnlineSessionSubsystem::OnFindSessionsComplete(bool bWasSuccessful)
+{
+	SessionManager->ClearOnFindSessionsCompleteDelegate_Handle(FindCompleteDelegateHandle);
+
+	if (bWasSuccessful == true && SessionSearch.IsValid() == true)
+	{
+		for (const FOnlineSessionSearchResult& NewResult : SessionSearch->SearchResults)
+		{
+			// Null OSS는 Lobby/Dedicated 두 패스를 구분하지 않고 같은 세션을 두 번 응답할 수 있어
+			// SessionId 기준으로 중복을 걸러낸다.
+			const bool bAlreadyCollected = CombinedSearchResults.ContainsByPredicate(
+				[&NewResult](const FOnlineSessionSearchResult& Existing)
+				{
+					return Existing.Session.SessionInfo->GetSessionId() == NewResult.Session.SessionInfo->GetSessionId();
+				});
+
+			if (bAlreadyCollected == false)
+			{
+				CombinedSearchResults.Add(NewResult);
+			}
+		}
+	}
+
+	if (CurrentSearchPass == ESessionSearchPass::Lobby)
+	{
+		// 1차(Lobby) 검색이 끝나면, 곧바로 2차(dedicated) 검색을 이어서 시작한다.
+		StartSessionSearch(ESessionSearchPass::Dedicated);
+		return;
+	}
+
+	// 2차(dedicated)까지 끝난 시점에만 결과를 확정하여 UI에 넘긴다.
+	CurrentSearchPass = ESessionSearchPass::None;
+
+	SessionResults = CombinedSearchResults;
+	CombinedSearchResults.Empty();
+
+	OnSessionSearchComplete.Broadcast();
+}
+
+void USXOnlineSessionSubsystem::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
+{
+	SessionManager->ClearOnJoinSessionCompleteDelegate_Handle(JoinCompleteDelegateHandle);
+
+	if (Result == EOnJoinSessionCompleteResult::Success)
+	{
+		APlayerController* PC = GetGameInstance()->GetFirstLocalPlayerController();
+		if (IsValid(PC) == true)
+		{
+			FString TravelURL;
+			if (SessionManager->GetResolvedConnectString(NAME_GameSession, TravelURL) == true)
+			{
+				PC->ClientTravel(TravelURL, ETravelType::TRAVEL_Absolute);
+			}
+		}
+	}
+	else
+	{
+		// 접속 실패 시 로컬 세션 정리 (재시도 가능하도록)
+		DestroySession();
+	}
 }

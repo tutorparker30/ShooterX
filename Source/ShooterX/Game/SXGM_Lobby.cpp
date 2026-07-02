@@ -7,6 +7,7 @@
 #include "Controller/SXUIPC_Lobby.h"
 #include "Game/SXPS_Lobby.h"
 #include "ShooterX.h"
+#include "Game/SXOnlineSessionSubsystem.h"
 
 ASXGM_Lobby::ASXGM_Lobby()
 {
@@ -146,5 +147,19 @@ void ASXGM_Lobby::Logout(AController* Exiting)
 	if (IsValid(LobbyPC) == true)
 	{
 		AllPlayerControllers.Remove(LobbyPC);
+	}
+}
+
+void ASXGM_Lobby::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (GetNetMode() == NM_DedicatedServer || GetNetMode() == NM_ListenServer)
+	{
+		USXOnlineSessionSubsystem* Subsystem = GetGameInstance()->GetSubsystem<USXOnlineSessionSubsystem>();
+		if (IsValid(Subsystem) == true)
+		{
+			Subsystem->CreateSession(MaxSessionPlayers);
+		}
 	}
 }

@@ -31,6 +31,8 @@ public:
 
 	virtual void Logout(AController* Exiting) override;
 
+	virtual void BeginPlay() override;
+
 public:
 	TArray<TWeakObjectPtr<ASXUIPC_Lobby>> AllPlayerControllers;
 
@@ -42,6 +44,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere)
 	float RemainTimeForPlaying = 5.f;
+
+	UPROPERTY(EditDefaultsOnly)
+	int32 MaxSessionPlayers = 4;
 
 private:
 	bool bIsTravelling = false;

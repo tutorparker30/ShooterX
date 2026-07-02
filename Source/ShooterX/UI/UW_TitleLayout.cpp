@@ -13,9 +13,25 @@ UUW_TitleLayout::UUW_TitleLayout(const FObjectInitializer& ObjectInitializer)
 
 void UUW_TitleLayout::NativeConstruct()
 {
-	PlayButton.Get()->OnClicked.AddDynamic(this, &ThisClass::OnPlayButtonClicked);
-	ExitButton.Get()->OnClicked.AddDynamic(this, &ThisClass::OnExitButtonClicked);
-	HostButton.Get()->OnClicked.AddDynamic(this, &ThisClass::OnHostButtonClicked);
+	Super::NativeConstruct();
+
+	if (IsValid(PlayButton) &&
+		PlayButton->OnClicked.IsAlreadyBound(this, &ThisClass::OnPlayButtonClicked) == false)
+	{
+		PlayButton->OnClicked.AddDynamic(this, &ThisClass::OnPlayButtonClicked);
+	}
+
+	if (IsValid(ExitButton) &&
+		ExitButton->OnClicked.IsAlreadyBound(this, &ThisClass::OnExitButtonClicked) == false)
+	{
+		ExitButton->OnClicked.AddDynamic(this, &ThisClass::OnExitButtonClicked);
+	}
+
+	if (IsValid(HostButton) &&
+		HostButton->OnClicked.IsAlreadyBound(this, &ThisClass::OnHostButtonClicked) == false)
+	{
+		HostButton->OnClicked.AddDynamic(this, &ThisClass::OnHostButtonClicked);
+	}
 }
 
 void UUW_TitleLayout::OnPlayButtonClicked()
@@ -32,11 +48,15 @@ void UUW_TitleLayout::OnExitButtonClicked()
 
 void UUW_TitleLayout::OnHostButtonClicked()
 {
+	UE_LOG(LogTemp, Warning, TEXT("OnHostButtonClicked called. this=%s"), *GetName());
+
 	UWorld* World = GetWorld();
 	if (IsValid(World) == false || World->GetNetMode() != NM_Standalone)
 	{
 		return;
 	}
+
+	HostButton->SetIsEnabled(false);
 
 	const FName LevelName(TEXT("Lobby"));
 	const FString Options(TEXT("listen"));
