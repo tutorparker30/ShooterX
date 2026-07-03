@@ -20,6 +20,8 @@ class SHOOTERX_API UUW_SessionList : public UUserWidget
 public:
 	virtual void NativeConstruct() override;
 
+	virtual void NativeDestruct() override;
+
 	void RefreshUI();
 
 private:

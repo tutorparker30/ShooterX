@@ -6,6 +6,7 @@
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Kismet/GameplayStatics.h"
 #include "Online/OnlineSessionNames.h"
+#include "Engine/NetDriver.h"
 
 void USXOnlineSessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -28,10 +29,45 @@ void USXOnlineSessionSubsystem::CreateSession(int32 MaxPlayers)
 		return;
 	}
 
-	// 이미 세션이 존재하면 먼저 파괴 후 재생성 (17.8 Ex170503 참고)
+	// [포트 0 방지] OnlineSubsystemNull은 세션 검색에 응답할 때마다 GetPortFromNetDriver()로
+	// NetDriver의 현재 포트를 다시 읽어서 돌려준다. 리슨서버 레벨이 뜨자마자(BeginPlay)
+	// 바로 세션을 광고 가능 상태로 만들면, NetDriver 포트 조회가 아직 안정화되기 전에
+	// 클라이언트 쿼리가 도착해서 포트 0을 응답할 수 있다 (그 값이 클라 쪽에 캐싱되어 버림).
+	// 그래서 엔진이 쓰는 것과 같은 방식으로 포트가 실제로 준비됐는지 먼저 확인한다.
+	UNetDriver* NetDriver = GetWorld() ? GetWorld()->GetNetDriver() : nullptr;
+	bool bNetDriverPortReady = false;
+	if (NetDriver != nullptr && NetDriver->GetNetMode() < NM_Client)
+	{
+		const FString AddressStr = NetDriver->LowLevelGetNetworkNumber();
+		const int32 Colon = AddressStr.Find(TEXT(":"), ESearchCase::IgnoreCase, ESearchDir::FromEnd);
+		const FString PortStr = (Colon != INDEX_NONE) ? AddressStr.Mid(Colon + 1) : FString();
+		bNetDriverPortReady = PortStr.IsEmpty() == false && PortStr != TEXT("0");
+	}
+
+	if (bNetDriverPortReady == false)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Session] NetDriver port not ready yet. Retrying CreateSession(%d) next tick."), MaxPlayers);
+		GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateUObject(this, &ThisClass::CreateSession, MaxPlayers));
+		return;
+	}
+
 	if (SessionManager->GetNamedSession(NAME_GameSession) != nullptr)
 	{
-		DestroySession();
+		if (IsRunningDedicatedServer() == true)
+		{
+			// 데디서버는 라운드가 순환해도 같은 세션을 계속 유지하는 게 정상이므로 그대로 둔다.
+			UE_LOG(LogTemp, Log, TEXT("Session already exists. Skipping CreateSession (dedicated server)."));
+		}
+		else
+		{
+			// 리슨서버에서 라운드 종료 후 빛의 속도로 재생성 요청이 들어올 수 있음.
+			// 그럼 리슨서버는 이전 세션이 아직 파괴 처리 중일 수 있으므로,
+			// 파괴가 끝난 뒤 OnDestroySessionComplete()에서 자동으로 재요청하도록 예약한다.
+			UE_LOG(LogTemp, Warning, TEXT("[Session] Existing session found (non-dedicated). Destroy & recreate with MaxPlayers=%d"),
+				MaxPlayers);
+			PendingCreateSessionMaxPlayers = MaxPlayers;
+			DestroySession();
+		}
 		return;
 	}
 
@@ -73,14 +109,17 @@ void USXOnlineSessionSubsystem::OnCreateSessionComplete(FName SessionName, bool 
 
 	if (bWasSuccessful == false)
 	{
+		UE_LOG(LogTemp, Error, TEXT("[Session] CreateSession FAILED: %s"), *SessionName.ToString());
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Dedicated session created. Waiting for players..."));
+	UE_LOG(LogTemp, Log, TEXT("Session created. Waiting for players..."));
 }
 
 void USXOnlineSessionSubsystem::DestroySession()
 {
+	UE_LOG(LogTemp, Warning, TEXT("[Session] DestroySession() called."));
+
 	if (SessionManager.IsValid() == false)
 	{
 		return;
@@ -110,6 +149,8 @@ void USXOnlineSessionSubsystem::FindSessions()
 
 void USXOnlineSessionSubsystem::JoinSession(const FOnlineSessionSearchResult& InSearchResult)
 {
+	UE_LOG(LogTemp, Warning, TEXT("[Session] JoinSession() called."));
+
 	if (SessionManager.IsValid() == false)
 	{
 		return;
@@ -125,7 +166,18 @@ void USXOnlineSessionSubsystem::JoinSession(const FOnlineSessionSearchResult& In
 
 void USXOnlineSessionSubsystem::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful)
 {
+	UE_LOG(LogTemp, Warning, TEXT("[Session] DestroySession complete. Success=%d, PendingRecreate=%d"), bWasSuccessful,
+		PendingCreateSessionMaxPlayers);
+
 	SessionManager->ClearOnDestroySessionCompleteDelegate_Handle(DestroyCompleteDelegateHandle);
+
+	if (0 < PendingCreateSessionMaxPlayers)
+	{
+		const int32 MaxPlayers = PendingCreateSessionMaxPlayers;
+		PendingCreateSessionMaxPlayers = -1;
+		CreateSession(MaxPlayers);
+		return;
+	}
 }
 
 void USXOnlineSessionSubsystem::StartSessionSearch(ESessionSearchPass InPass)
@@ -200,16 +252,32 @@ void USXOnlineSessionSubsystem::OnJoinSessionComplete(FName SessionName, EOnJoin
 {
 	SessionManager->ClearOnJoinSessionCompleteDelegate_Handle(JoinCompleteDelegateHandle);
 
+	UE_LOG(LogTemp, Warning, TEXT("[Session] JoinSession complete. Result=%d"), (int32)Result);
+
 	if (Result == EOnJoinSessionCompleteResult::Success)
 	{
-		APlayerController* PC = GetGameInstance()->GetFirstLocalPlayerController();
-		if (IsValid(PC) == true)
+		FString TravelURL;
+		const bool bHasValidConnectString =
+			SessionManager->GetResolvedConnectString(NAME_GameSession, TravelURL) == true &&
+			TravelURL.EndsWith(TEXT(":0")) == false;
+
+		if (bHasValidConnectString == true)
 		{
-			FString TravelURL;
-			if (SessionManager->GetResolvedConnectString(NAME_GameSession, TravelURL) == true)
+			APlayerController* PC = GetGameInstance()->GetFirstLocalPlayerController();
+			if (IsValid(PC) == true)
 			{
 				PC->ClientTravel(TravelURL, ETravelType::TRAVEL_Absolute);
 			}
+		}
+		else
+		{
+			// 호스트의 GameNetDriver가 준비되기 전에 FindSessions()가 캐싱해버린
+			// 포트 0짜리 좀비 검색 결과. 이대로 ClientTravel하면 20초 타임아웃까지
+			// Join 버튼이 막히므로 여기서 즉시 실패로 처리해 버튼을 바로 풀어준다.
+			UE_LOG(LogTemp, Warning, TEXT("[Session] JoinSession resolved port=0. TravelURL=%s"), *TravelURL);
+			DestroySession();
+			OnJoinSessionResult.Broadcast(false);
+			return;
 		}
 	}
 	else
@@ -217,4 +285,6 @@ void USXOnlineSessionSubsystem::OnJoinSessionComplete(FName SessionName, EOnJoin
 		// 접속 실패 시 로컬 세션 정리 (재시도 가능하도록)
 		DestroySession();
 	}
+
+	OnJoinSessionResult.Broadcast(Result == EOnJoinSessionCompleteResult::Success);
 }

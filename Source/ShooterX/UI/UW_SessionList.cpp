@@ -27,6 +27,23 @@ void UUW_SessionList::NativeConstruct()
 	OnRefreshButtonClicked();
 }
 
+void UUW_SessionList::NativeDestruct()
+{
+	if (IsValid(RefreshButton) &&
+		RefreshButton->OnClicked.IsAlreadyBound(this, &ThisClass::OnRefreshButtonClicked) == true)
+	{
+		RefreshButton->OnClicked.RemoveDynamic(this, &ThisClass::OnRefreshButtonClicked);
+	}
+
+	USXOnlineSessionSubsystem* Subsystem = GetGameInstance()->GetSubsystem<USXOnlineSessionSubsystem>();
+	if (IsValid(Subsystem) == true)
+	{
+		Subsystem->OnSessionSearchComplete.Remove(SessionSearchCompleteHandle);
+	}
+
+	Super::NativeDestruct();
+}
+
 void UUW_SessionList::OnRefreshButtonClicked()
 {
 	RefreshButton->SetIsEnabled(false);

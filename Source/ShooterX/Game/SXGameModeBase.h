@@ -50,6 +50,8 @@ public:
 
 	float RemainWaitingTimeForEnding = 15;
 
+	TWeakObjectPtr<ASXPlayerController> LocalHostController;
+
 protected:
 	UPROPERTY()
 	TArray<TWeakObjectPtr<ASXPlayerController>> AlivePlayerControllers;

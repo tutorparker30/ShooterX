@@ -31,6 +31,8 @@ class SHOOTERX_API UUW_SessionListEntry : public UUserWidget, public IUserObject
 public:
 	virtual void NativeConstruct() override;
 
+	virtual void NativeDestruct() override;
+
 protected:
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
 
@@ -39,6 +41,8 @@ private:
 
 	UFUNCTION()
 	void OnJoinButtonClicked();
+
+	void OnJoinSessionResult(bool bWasSuccessful);
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Meta = (BindWidget))
@@ -55,5 +59,7 @@ public:
 
 private:
 	FOnlineSessionSearchResult SessionResult;
+
+	FDelegateHandle JoinSessionResultHandle;
 
 };

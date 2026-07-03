@@ -12,6 +12,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "UI/UW_GameResult.h"
 #include "Components/TextBlock.h"
+#include "Game/SXOnlineSessionSubsystem.h"
+#include "ShooterX.h"
 
 ASXPlayerController::ASXPlayerController()
 {
@@ -88,8 +90,19 @@ void ASXPlayerController::ClientRPCShowGameResultWidget_Implementation(int32 InR
 
 void ASXPlayerController::ClientRPCReturnToTitle_Implementation()
 {
+	UE_LOG(LogTemp, Warning, TEXT("[ReturnToTitle] Executing. NetMode=%s"), *ShooterXFunctionLibrary::GetNetModeString(this));
+
 	if (IsLocalController() == true)
-	{ // 서버의 레벨이 변경되는걸 원치 않음. 클라이언트가 이동해야하므로 if() 처리.
+	{
+		if (GetNetMode() == NM_ListenServer)
+		{
+			USXOnlineSessionSubsystem* Subsystem = GetGameInstance()->GetSubsystem<USXOnlineSessionSubsystem>();
+			if (IsValid(Subsystem) == true)
+			{
+				Subsystem->DestroySession();
+			}
+		}
+
 		UGameplayStatics::OpenLevel(GetWorld(), FName(TEXT("Title")), true);
 	}
 }

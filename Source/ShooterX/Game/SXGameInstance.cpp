@@ -3,6 +3,8 @@
 
 #include "Game/SXGameInstance.h"
 
+#include "Game/SXOnlineSessionSubsystem.h"
+
 
 void USXGameInstance::Init()
 {
@@ -23,6 +25,12 @@ void USXGameInstance::Init()
 
 void USXGameInstance::Shutdown()
 {
+	USXOnlineSessionSubsystem* Subsystem = GetSubsystem<USXOnlineSessionSubsystem>();
+	if (IsValid(Subsystem) == true)
+	{
+		Subsystem->DestroySession();
+	}
+
 	Super::Shutdown();
 }
 

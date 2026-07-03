@@ -15,6 +15,30 @@ void UUW_SessionListEntry::NativeConstruct()
 	{
 		JoinButton->OnClicked.AddDynamic(this, &ThisClass::OnJoinButtonClicked);
 	}
+
+	USXOnlineSessionSubsystem* Subsystem = GetGameInstance()->GetSubsystem<USXOnlineSessionSubsystem>();
+	if (IsValid(Subsystem) == true)
+	{
+		JoinSessionResultHandle =
+			Subsystem->OnJoinSessionResult.AddUObject(this, &ThisClass::OnJoinSessionResult);
+	}
+}
+
+void UUW_SessionListEntry::NativeDestruct()
+{
+	if (IsValid(JoinButton) &&
+		JoinButton->OnClicked.IsAlreadyBound(this, &ThisClass::OnJoinButtonClicked) == true)
+	{
+		JoinButton->OnClicked.RemoveDynamic(this, &ThisClass::OnJoinButtonClicked);
+	}
+
+	USXOnlineSessionSubsystem* Subsystem = GetGameInstance()->GetSubsystem<USXOnlineSessionSubsystem>();
+	if (IsValid(Subsystem) == true)
+	{
+		Subsystem->OnJoinSessionResult.Remove(JoinSessionResultHandle);
+	}
+
+	Super::NativeDestruct();
 }
 
 void UUW_SessionListEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
@@ -58,5 +82,13 @@ void UUW_SessionListEntry::OnJoinButtonClicked()
 	if (IsValid(Subsystem) == true)
 	{
 		Subsystem->JoinSession(SessionResult);
+	}
+}
+
+void UUW_SessionListEntry::OnJoinSessionResult(bool bWasSuccessful)
+{
+	if (bWasSuccessful == false && IsValid(JoinButton) == true)
+	{
+		JoinButton->SetIsEnabled(true);
 	}
 }

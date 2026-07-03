@@ -48,8 +48,6 @@ void UUW_TitleLayout::OnExitButtonClicked()
 
 void UUW_TitleLayout::OnHostButtonClicked()
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnHostButtonClicked called. this=%s"), *GetName());
-
 	UWorld* World = GetWorld();
 	if (IsValid(World) == false || World->GetNetMode() != NM_Standalone)
 	{

@@ -6,6 +6,7 @@
 #include "Character/SXPlayerPawn.h"
 #include "Game/SXGameStateBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "ShooterX.h"
 
 ASXGameModeBase::ASXGameModeBase()
 {
@@ -201,16 +202,40 @@ void ASXGameModeBase::OnMainTimerElapsed()
 
 		if (RemainWaitingTimeForEnding <= 0)
 		{
+			UE_LOG(LogTemp, Warning, TEXT("[RoundEnd] NetMode=%s, Alive=%d, Dead=%d"),
+				*ShooterXFunctionLibrary::GetNetModeString(this), AlivePlayerControllers.Num(), DeadPlayerControllers.Num());
 			for (auto AliveController : AlivePlayerControllers)
 			{
+				if (AliveController->IsLocalController() == true)
+				{
+					LocalHostController = AliveController;
+					continue;
+				}
 				AliveController->ClientRPCReturnToTitle();
 			}
 			for (auto DeadController : DeadPlayerControllers)
 			{
+				if (DeadController->IsLocalController() == true)
+				{
+					LocalHostController = DeadController;
+					continue;
+				}
 				DeadController->ClientRPCReturnToTitle();
 			}
 
-			UGameplayStatics::OpenLevel(this, *FString(TEXT("Lobby")), true, FString(TEXT("listen")));
+			if (GetNetMode() == NM_DedicatedServer)
+			{
+				UGameplayStatics::OpenLevel(this, *FString(TEXT("Lobby")), true, FString(TEXT("listen")));
+			}
+			if (GetNetMode() == NM_ListenServer || GetNetMode() == NM_Standalone)
+			{
+				if (LocalHostController.IsValid() == true)
+				{
+					LocalHostController->ClientRPCReturnToTitle();
+				}
+			}
+
+			UE_LOG(LogTemp, Warning, TEXT("[RoundEnd] Branch done. LocalHostControllerValid=%d"), LocalHostController.IsValid());
 
 			RemainWaitingTimeForEnding = 0.f;
 

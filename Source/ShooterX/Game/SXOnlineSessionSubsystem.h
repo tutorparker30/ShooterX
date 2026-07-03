@@ -20,6 +20,8 @@ enum class ESessionSearchPass : uint8
 
 DECLARE_MULTICAST_DELEGATE(FOnSessionSearchComplete);
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnJoinSessionResult, bool /*bWasSuccessful*/);
+
 /**
  *
  */
@@ -56,12 +58,17 @@ public:
 
 	FOnSessionSearchComplete OnSessionSearchComplete;
 
+	FOnJoinSessionResult OnJoinSessionResult;
+
 private:
 	IOnlineSessionPtr SessionManager;
 
 	FDelegateHandle CreateCompleteDelegateHandle;
 
 	FDelegateHandle DestroyCompleteDelegateHandle;
+
+	// 리슨서버가 파괴 중인 낡은 세션과 맞물렸을 때, 파괴 완료 후 자동으로 재요청하기 위한 예약값 (-1이면 예약 없음)
+	int32 PendingCreateSessionMaxPlayers = -1;
 
 	ESessionSearchPass CurrentSearchPass = ESessionSearchPass::None;
 
