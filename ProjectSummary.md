@@ -25,6 +25,8 @@
 15. [플러그인 및 모듈 의존성](#15-플러그인-및-모듈-의존성)
 16. [Git 커밋 히스토리](#16-git-커밋-히스토리)
 17. [기능 완성도 요약](#17-기능-완성도-요약)
+18. [협업 방식 (Claude 작업 규칙)](#18-협업-방식-claude-작업-규칙)
+19. [TODO: 세션 이름 / 다음 레벨 정보 전달 흐름 개선](#19-todo-세션-이름--다음-레벨-정보-전달-흐름-개선)
 
 ---
 
@@ -934,3 +936,214 @@ Content/
 | 힐팩 | ASXHealthPack | 완성 |
 | 네트워크 최적화 | Relevancy, NetCullDistance | 완성 |
 | 패키징 | Build Settings | 완성 |
+
+---
+
+## 18. 협업 방식 (Claude 작업 규칙)
+
+> 2026-07-04부터 적용
+
+- 사용자가 앞으로 해야 할 작업을 설명하면, Claude는 **코드를 직접 수정하지 않는다.**
+- 대신 작업 방법을 **스텝바이스텝**으로 안내한다.
+- 안내 시 반드시 다음을 포함한다:
+  - **어떤 파일**을 수정해야 하는지
+  - **어떤 클래스**를 수정해야 하는지
+  - **어떤 함수**를 수정해야 하는지
+  - **Before / After** 코드 비교 (수정 전 코드 / 수정 후 코드)
+- 사용자가 명시적으로 "직접 구현해줘" 등으로 요청하는 경우에는 이 규칙에서 예외로 하고 직접 구현한다.
+
+---
+
+## 19. TODO: 세션 이름 / 다음 레벨 정보 전달 흐름 개선
+
+> 2026-07-04 작성. `UW_SessionSetupMenu`에서 세션 생성 시 정한 "세션 이름"과 "다음에 이동할 레벨 이름"을,
+> `Lobby` 레벨의 `ASXGM_Lobby`까지 전달하기 위한 작업 계획. 기존 `Saved/PlayerInfo.txt` JSON 저장/로드 패턴
+> (`UW_LobbyLayout.cpp` / `SXPlayerState.cpp`)을 그대로 따라간다.
+
+### 설계 요약
+
+- `Saved/SessionSetup.txt`에 `{sessionname, mapname}` JSON을 새로 저장 (기존 `PlayerInfo.txt`와 동일한 방식)
+- `UW_SessionSetupMenu`에서 직접 `CreateSession()`을 호출하던 걸 걷어내고, 파일 저장 + `OpenLevel(Lobby, listen)`으로 변경
+- `ASXGM_Lobby::BeginPlay()`에서 그 파일을 읽어 세션 이름으로 `CreateSession()` 호출 + 다음에 이동할 레벨 이름을 멤버 변수에 저장
+- `ASXGM_Lobby::Tick()`의 하드코딩된 `"L_Expanse"` 대신 그 멤버 변수로 `ServerTravel()`
+
+### Step 1. `Source/ShooterX/UI/UW_SessionSetupMenu.cpp` — `UUW_SessionSetupMenu::OnCreateSessionButtonClicked()`
+
+**Before**
+```cpp
+void UUW_SessionSetupMenu::OnCreateSessionButtonClicked()
+{
+	CreateSessionButton->SetIsEnabled(false);
+
+	FString SessionName = SessionNameEditableText->GetText().ToString();
+	FString MapName = MapComboBox->GetSelectedOption();
+
+	USXOnlineSessionSubsystem* Subsystem = GetGameInstance()->GetSubsystem<USXOnlineSessionSubsystem>();
+	if (IsValid(Subsystem))
+	{
+		Subsystem->CreateSession(MaxPlayers, SessionName, MapName);
+	}
+
+	RemoveFromParent();
+}
+```
+> 지금 이 코드는 `Subsystem->CreateSession(MaxPlayers, SessionName, MapName)` 처럼 인자를 3개 넘기는데, `SXOnlineSessionSubsystem.h`의 선언은 `CreateSession(int32 MaxPlayers, FString InSessionName = TEXT("None"))` 로 2개만 받기 때문에 **현재 컴파일이 안 되는 상태**임.
+
+**After**
+```cpp
+void UUW_SessionSetupMenu::OnCreateSessionButtonClicked()
+{
+	UWorld* World = GetWorld();
+	if (IsValid(World) == false || World->GetNetMode() != NM_Standalone)
+	{
+		return;
+	}
+
+	CreateSessionButton->SetIsEnabled(false);
+
+	const FString SessionName = SessionNameEditableText->GetText().ToString();
+	const FString MapName = MapComboBox->GetSelectedOption();
+
+	const FString SavedDirectoryPath = FPaths::Combine(FPlatformMisc::ProjectDir(), TEXT("Saved"));
+	const FString SavedFileName(TEXT("SessionSetup.txt"));
+	FString AbsoluteFilePath = FPaths::Combine(*SavedDirectoryPath, *SavedFileName);
+	FPaths::MakeStandardFilename(AbsoluteFilePath);
+
+	TSharedRef<FJsonObject> SessionSetupJsonObject = MakeShared<FJsonObject>();
+	SessionSetupJsonObject->SetStringField(TEXT("sessionname"), SessionName);
+	SessionSetupJsonObject->SetStringField(TEXT("mapname"), MapName);
+
+	FString SessionSetupJsonString;
+	TSharedRef<TJsonWriter<TCHAR>> JsonWriterArchive = TJsonWriterFactory<TCHAR>::Create(&SessionSetupJsonString);
+	if (FJsonSerializer::Serialize(SessionSetupJsonObject, JsonWriterArchive) == true)
+	{
+		FFileHelper::SaveStringToFile(SessionSetupJsonString, *AbsoluteFilePath);
+	}
+
+	const FName LevelName(TEXT("Lobby"));
+	const FString Options(TEXT("listen"));
+	UGameplayStatics::OpenLevel(World, LevelName, true, Options);
+}
+```
+- `Subsystem->CreateSession(...)` 호출 자체를 제거 (세션 생성은 Lobby 레벨의 `ASXGM_Lobby::BeginPlay()`로 이관)
+- 파일 상단 include에 `#include "Dom/JsonObject.h"`, `#include "Serialization/JsonWriter.h"`, `#include "Misc/FileHelper.h"`, `#include "Kismet/GameplayStatics.h"` 필요 여부 확인 (없으면 추가)
+- `MaxPlayers` 프로퍼티는 이 함수에서 더 이상 쓰이지 않게 됨 — 나중에 세션 인원수를 UI에서 반영하고 싶으면 이 값도 파일에 같이 저장해서 `ASXGM_Lobby`가 읽게 만들어야 함 (지금 계획 범위 밖이라 일단 그대로 둠)
+
+### Step 2. `Source/ShooterX/Game/SXGM_Lobby.h` — `ASXGM_Lobby` 클래스에 멤버 변수 추가
+
+**Before**
+```cpp
+	UPROPERTY(EditDefaultsOnly)
+	int32 MaxSessionPlayers = 4;
+
+private:
+	bool bIsTravelling = false;
+```
+
+**After**
+```cpp
+	UPROPERTY(EditDefaultsOnly)
+	int32 MaxSessionPlayers = 4;
+
+private:
+	bool bIsTravelling = false;
+
+	UPROPERTY(VisibleAnywhere)
+	FString TargetLevelName = TEXT("L_Expanse");
+```
+- `TargetLevelName`을 기본값 `"L_Expanse"`로 둬서, `SessionSetup.txt`가 없을 때(예: 에디터에서 Lobby 맵 단독 실행)도 안전하게 동작하도록 함
+
+### Step 3. `Source/ShooterX/Game/SXGM_Lobby.cpp` — `ASXGM_Lobby::BeginPlay()`
+
+**Before**
+```cpp
+void ASXGM_Lobby::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (GetNetMode() == NM_DedicatedServer || GetNetMode() == NM_ListenServer)
+	{
+		USXOnlineSessionSubsystem* Subsystem = GetGameInstance()->GetSubsystem<USXOnlineSessionSubsystem>();
+		if (IsValid(Subsystem) == true)
+		{
+			Subsystem->CreateSession(MaxSessionPlayers);
+		}
+	}
+}
+```
+
+**After**
+```cpp
+void ASXGM_Lobby::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (GetNetMode() == NM_DedicatedServer || GetNetMode() == NM_ListenServer)
+	{
+		const FString SavedDirectoryPath = FPaths::Combine(FPlatformMisc::ProjectDir(), TEXT("Saved"));
+		const FString SavedFileName(TEXT("SessionSetup.txt"));
+		FString AbsoluteFilePath = FPaths::Combine(*SavedDirectoryPath, *SavedFileName);
+		FPaths::MakeStandardFilename(AbsoluteFilePath);
+
+		FString SessionName = TEXT("None");
+
+		FString SessionSetupJsonString;
+		if (FFileHelper::LoadFileToString(SessionSetupJsonString, *AbsoluteFilePath) == true)
+		{
+			TSharedRef<TJsonReader<TCHAR>> JsonReaderArchive = TJsonReaderFactory<TCHAR>::Create(SessionSetupJsonString);
+			TSharedPtr<FJsonObject> SessionSetupJsonObject = nullptr;
+			if (FJsonSerializer::Deserialize(JsonReaderArchive, SessionSetupJsonObject) == true)
+			{
+				SessionName = SessionSetupJsonObject->GetStringField(TEXT("sessionname"));
+				TargetLevelName = SessionSetupJsonObject->GetStringField(TEXT("mapname"));
+			}
+		}
+
+		USXOnlineSessionSubsystem* Subsystem = GetGameInstance()->GetSubsystem<USXOnlineSessionSubsystem>();
+		if (IsValid(Subsystem) == true)
+		{
+			Subsystem->CreateSession(MaxSessionPlayers, SessionName);
+		}
+	}
+}
+```
+- `TargetLevelName`은 파일이 없거나 파싱 실패 시 Step 2에서 설정한 기본값(`"L_Expanse"`)을 그대로 유지
+- 파일 상단 include에 `#include "Dom/JsonObject.h"`, `#include "Serialization/JsonReader.h"`, `#include "Misc/FileHelper.h"` 필요 여부 확인
+
+### Step 4. `Source/ShooterX/Game/SXGM_Lobby.cpp` — `ASXGM_Lobby::Tick(float DeltaSeconds)`
+
+**Before**
+```cpp
+	if (RemainTimeForPlaying <= 0.f)
+	{
+		bIsTravelling = true;
+
+		UWorld* World = GetWorld();
+		if (IsValid(World) == true)
+		{
+			World->ServerTravel(TEXT("L_Expanse"));
+		}
+	}
+```
+
+**After**
+```cpp
+	if (RemainTimeForPlaying <= 0.f)
+	{
+		bIsTravelling = true;
+
+		UWorld* World = GetWorld();
+		if (IsValid(World) == true)
+		{
+			World->ServerTravel(TargetLevelName);
+		}
+	}
+```
+
+### 참고: 실제 검증 순서
+
+1. Title 레벨에서 `UW_SessionSetupMenu`로 세션 이름/맵 선택 → `SessionSetup.txt` 저장 → `Lobby`를 listen 서버로 오픈
+2. `ASXGM_Lobby::BeginPlay()`가 그 파일을 읽어 세션 이름으로 `CreateSession()` 호출, 동시에 `TargetLevelName` 세팅
+3. 인원 충족 후 `Tick()`에서 `TargetLevelName`(예: `L_Convolution_Blockout` 또는 `L_Expanse`)으로 `ServerTravel()`
+
+이대로 진행하면 기존에 있던 3-인자 `CreateSession()` 컴파일 에러도 자연히 해소됨.

@@ -8,6 +8,8 @@
 #include "Game/SXPS_Lobby.h"
 #include "ShooterX.h"
 #include "Game/SXOnlineSessionSubsystem.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 
 ASXGM_Lobby::ASXGM_Lobby()
 {
@@ -134,7 +136,8 @@ void ASXGM_Lobby::Tick(float DeltaSeconds)
 		UWorld* World = GetWorld();
 		if (IsValid(World) == true)
 		{
-			World->ServerTravel(TEXT("L_Expanse"));
+			//World->ServerTravel(TEXT("L_Expanse"));
+			World->ServerTravel(TargetLevelName);
 		}
 	}
 }
@@ -154,6 +157,7 @@ void ASXGM_Lobby::BeginPlay()
 {
 	Super::BeginPlay();
 
+	/*
 	if (GetNetMode() == NM_DedicatedServer || GetNetMode() == NM_ListenServer)
 	{
 		USXOnlineSessionSubsystem* Subsystem = GetGameInstance()->GetSubsystem<USXOnlineSessionSubsystem>();
@@ -161,5 +165,45 @@ void ASXGM_Lobby::BeginPlay()
 		{
 			Subsystem->CreateSession(MaxSessionPlayers);
 		}
+	}
+	*/
+	
+	FString SessionName = TEXT("None");
+
+	if (GetNetMode() == NM_DedicatedServer)
+	{
+		int32 MaxPlayers = 4;
+		FParse::Value(FCommandLine::Get(), TEXT("MaxPlayers="), MaxPlayers);
+
+		SessionName = TEXT("Dedicated Server");
+		FParse::Value(FCommandLine::Get(), TEXT("SessionName="), SessionName);
+
+		FParse::Value(FCommandLine::Get(), TEXT("TargetLevelName="), TargetLevelName);
+	}
+
+	if (GetNetMode() == NM_ListenServer)
+	{
+		const FString SavedDirectoryPath = FPaths::Combine(FPlatformMisc::ProjectDir(), TEXT("Saved"));
+		const FString SavedFileName(TEXT("SessionSetup.json"));
+		FString AbsoluteFilePath = FPaths::Combine(*SavedDirectoryPath, *SavedFileName);
+		FPaths::MakeStandardFilename(AbsoluteFilePath);
+
+		FString SessionSetupJsonString;
+		if (FFileHelper::LoadFileToString(SessionSetupJsonString, *AbsoluteFilePath) == true)
+		{
+			TSharedRef<TJsonReader<TCHAR>> JsonReaderArchive = TJsonReaderFactory<TCHAR>::Create(SessionSetupJsonString);
+			TSharedPtr<FJsonObject> SessionSetupJsonObject = nullptr;
+			if (FJsonSerializer::Deserialize(JsonReaderArchive, SessionSetupJsonObject) == true)
+			{
+				SessionName = SessionSetupJsonObject->GetStringField(TEXT("sessionname"));
+				TargetLevelName = SessionSetupJsonObject->GetStringField(TEXT("mapname"));
+			}
+		}
+	}
+
+	USXOnlineSessionSubsystem* Subsystem = GetGameInstance()->GetSubsystem<USXOnlineSessionSubsystem>();
+	if (IsValid(Subsystem) == true)
+	{
+		Subsystem->CreateSession(MaxSessionPlayers, SessionName);
 	}
 }

@@ -22,18 +22,14 @@ void USXOnlineSessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	}
 }
 
-void USXOnlineSessionSubsystem::CreateSession(int32 MaxPlayers)
+//void USXOnlineSessionSubsystem::CreateSession(int32 MaxPlayers)
+void USXOnlineSessionSubsystem::CreateSession(int32 MaxPlayers, FString InSessionName)
 {
 	if (SessionManager.IsValid() == false)
 	{
 		return;
 	}
 
-	// [포트 0 방지] OnlineSubsystemNull은 세션 검색에 응답할 때마다 GetPortFromNetDriver()로
-	// NetDriver의 현재 포트를 다시 읽어서 돌려준다. 리슨서버 레벨이 뜨자마자(BeginPlay)
-	// 바로 세션을 광고 가능 상태로 만들면, NetDriver 포트 조회가 아직 안정화되기 전에
-	// 클라이언트 쿼리가 도착해서 포트 0을 응답할 수 있다 (그 값이 클라 쪽에 캐싱되어 버림).
-	// 그래서 엔진이 쓰는 것과 같은 방식으로 포트가 실제로 준비됐는지 먼저 확인한다.
 	UNetDriver* NetDriver = GetWorld() ? GetWorld()->GetNetDriver() : nullptr;
 	bool bNetDriverPortReady = false;
 	if (NetDriver != nullptr && NetDriver->GetNetMode() < NM_Client)
@@ -47,7 +43,8 @@ void USXOnlineSessionSubsystem::CreateSession(int32 MaxPlayers)
 	if (bNetDriverPortReady == false)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[Session] NetDriver port not ready yet. Retrying CreateSession(%d) next tick."), MaxPlayers);
-		GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateUObject(this, &ThisClass::CreateSession, MaxPlayers));
+		//GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateUObject(this, &ThisClass::CreateSession, MaxPlayers));
+		GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateUObject(this, &ThisClass::CreateSession, MaxPlayers, InSessionName));
 		return;
 	}
 
@@ -55,14 +52,10 @@ void USXOnlineSessionSubsystem::CreateSession(int32 MaxPlayers)
 	{
 		if (IsRunningDedicatedServer() == true)
 		{
-			// 데디서버는 라운드가 순환해도 같은 세션을 계속 유지하는 게 정상이므로 그대로 둔다.
 			UE_LOG(LogTemp, Log, TEXT("Session already exists. Skipping CreateSession (dedicated server)."));
 		}
 		else
 		{
-			// 리슨서버에서 라운드 종료 후 빛의 속도로 재생성 요청이 들어올 수 있음.
-			// 그럼 리슨서버는 이전 세션이 아직 파괴 처리 중일 수 있으므로,
-			// 파괴가 끝난 뒤 OnDestroySessionComplete()에서 자동으로 재요청하도록 예약한다.
 			UE_LOG(LogTemp, Warning, TEXT("[Session] Existing session found (non-dedicated). Destroy & recreate with MaxPlayers=%d"),
 				MaxPlayers);
 			PendingCreateSessionMaxPlayers = MaxPlayers;
@@ -73,30 +66,31 @@ void USXOnlineSessionSubsystem::CreateSession(int32 MaxPlayers)
 
 	FOnlineSessionSettings SessionSettings;
 	SessionSettings.bIsLANMatch = true;
-	SessionSettings.bShouldAdvertise = true;  // 세션 서버에 광고 (검색 허용)
+	SessionSettings.bShouldAdvertise = true; 
 	SessionSettings.NumPublicConnections = MaxPlayers;
 	SessionSettings.bAllowJoinInProgress = true;
 
-	// [리슨/데디 분기] dedicated/Lobby 플래그가 갈린다.
 	const bool bIsDedicated = IsRunningDedicatedServer();
 	SessionSettings.bIsDedicated = bIsDedicated;
-	SessionSettings.bUsesPresence = (bIsDedicated == false); // 데디서버는 로그인 유저가 없어 presence 불가
-	SessionSettings.bUseLobbiesIfAvailable = (bIsDedicated == false); // Steam 로비도 presence 기반이므로 데디는 off
+	SessionSettings.bUsesPresence = (bIsDedicated == false);
+	SessionSettings.bUseLobbiesIfAvailable = (bIsDedicated == false);
 
-	// CreateUObject로 단일 객체 재사용 (AddNewObject 사용 시 중복 호출 위험)
+	SessionSettings.Set(
+		FName(TEXT("SessionName")),
+		InSessionName,
+		EOnlineDataAdvertisementType::ViaOnlineService
+	);
+
 	FOnCreateSessionCompleteDelegate CreateDelegate =
 		FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete);
 	CreateCompleteDelegateHandle = SessionManager->AddOnCreateSessionCompleteDelegate_Handle(CreateDelegate);
 
 	if (bIsDedicated == true)
 	{
-		// [데디서버] 로컬 플레이어가 없으므로 UniqueNetId 오버로드를 쓸 수 없다.
-		// HostingPlayerNum(=0) 오버로드로 서버 자신이 세션을 생성한다.
 		SessionManager->CreateSession(0, NAME_GameSession, SessionSettings);
 	}
 	else
 	{
-		// [리슨서버] 방을 만든 로컬 플레이어의 UniqueNetId로 세션을 생성한다.
 		const ULocalPlayer* LocalPlayer = GetGameInstance()->GetFirstGamePlayer();
 		SessionManager->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, SessionSettings);
 	}
@@ -162,6 +156,36 @@ void USXOnlineSessionSubsystem::JoinSession(const FOnlineSessionSearchResult& In
 
 	const ULocalPlayer* LocalPlayer = GetGameInstance()->GetFirstGamePlayer();
 	SessionManager->JoinSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, InSearchResult);
+}
+
+void USXOnlineSessionSubsystem::UpdateSession(const FString& InMapName)
+{
+	if (SessionManager.IsValid() == false)
+	{
+		return;
+	}
+
+	// 현재 세션 설정을 가져와 기존 데이터를 유지한 채 맵 이름만 덮어씀
+	FOnlineSessionSettings* ExistingSettings = SessionManager->GetSessionSettings(NAME_GameSession);
+	if (ExistingSettings == nullptr)
+	{
+		return;
+	}
+
+	ExistingSettings->Set(
+		FName(TEXT("Map_Name")),
+		InMapName,
+		EOnlineDataAdvertisementType::ViaOnlineService
+	);
+
+	// 세션 갱신 중에도 방 검색이 유지되도록 반드시 true로 설정
+	ExistingSettings->bAllowJoinInProgress = true;
+
+	FOnUpdateSessionCompleteDelegate UpdateDelegate =
+		FOnUpdateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnUpdateSessionComplete);
+	UpdateCompleteDelegateHandle = SessionManager->AddOnUpdateSessionCompleteDelegate_Handle(UpdateDelegate);
+
+	SessionManager->UpdateSession(NAME_GameSession, *ExistingSettings, true);
 }
 
 void USXOnlineSessionSubsystem::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful)
@@ -287,4 +311,9 @@ void USXOnlineSessionSubsystem::OnJoinSessionComplete(FName SessionName, EOnJoin
 	}
 
 	OnJoinSessionResult.Broadcast(Result == EOnJoinSessionCompleteResult::Success);
+}
+
+void USXOnlineSessionSubsystem::OnUpdateSessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	SessionManager->ClearOnUpdateSessionCompleteDelegate_Handle(UpdateCompleteDelegateHandle);
 }

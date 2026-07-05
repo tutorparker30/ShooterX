@@ -37,7 +37,7 @@ call "%UE_ROOT%\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun ^
 -clientconfig=Development ^
 -target=%PROJECT_NAME% ^
 -cook ^
--map=Title+Lobby+L_Expanse ^
+-map=Title+Lobby+L_Convolution_Blockout+L_Expanse ^
 -build ^
 -stage ^
 -pak ^
@@ -72,7 +72,7 @@ call "%UE_ROOT%\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun ^
 -servertarget=%PROJECT_NAME%Server ^
 -noclient ^
 -cook ^
--map=Title+Lobby+L_Expanse ^
+-map=Title+Lobby+L_Convolution_Blockout+L_Expanse ^
 -build ^
 -stage ^
 -pak ^

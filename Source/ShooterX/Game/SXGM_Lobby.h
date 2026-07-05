@@ -48,6 +48,9 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	int32 MaxSessionPlayers = 4;
 
+	UPROPERTY(VisibleAnywhere)
+	FString TargetLevelName = TEXT("L_Expanse");
+
 private:
 	bool bIsTravelling = false;
 

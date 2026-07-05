@@ -8,6 +8,13 @@
 
 class UButton;
 class UEditableText;
+class UWidgetSwitcher;
+
+enum class ESessionMenuIndex : uint8
+{
+	SessionList = 0,
+	SessionSetupMenu = 1
+};
 
 /**
  *
@@ -44,5 +51,8 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = USLobbyLevelUI, Meta = (AllowPrivateAccess, BindWidget))
 	TObjectPtr<UEditableText> ServerIPEditableText;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = USTitleWidget, Meta = (AllowPrivateAccess, BindWidget))
+	TObjectPtr<UWidgetSwitcher> SessionListAndSetupMenuSwitcher;
 
 };

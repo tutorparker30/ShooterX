@@ -8,14 +8,11 @@
 #include "OnlineSessionSettings.h"
 #include "SXOnlineSessionSubsystem.generated.h"
 
-// [데디서버] 리슨서버(Lobby) 세션과 데디서버(dedicated) 세션은
-// 검색 쿼리 자체가 달라 한 번의 FindSessions 호출로는 둘 다 찾을 수 없다.
-// 두 종류를 순차 검색한 뒤 결과를 합쳐 하나의 목록으로 만들기 위한 상태값들.
 enum class ESessionSearchPass : uint8
 {
 	None,
-	Lobby,   // 1차: 리슨서버(Lobby) 검색
-	Dedicated,  // 2차: 데디서버(dedicated) 검색
+	Lobby,
+	Dedicated,
 };
 
 DECLARE_MULTICAST_DELEGATE(FOnSessionSearchComplete);
@@ -33,13 +30,15 @@ class SHOOTERX_API USXOnlineSessionSubsystem : public UGameInstanceSubsystem
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
-	void CreateSession(int32 MaxPlayers);
+	void CreateSession(int32 MaxPlayers, FString InSessionName = TEXT("None"));
 
 	void DestroySession();
 
 	void FindSessions();
 
 	void JoinSession(const FOnlineSessionSearchResult& InSearchResult);
+
+	void UpdateSession(const FString& InMapName);
 
 private:
 	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
@@ -52,8 +51,9 @@ private:
 
 	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
 
+	void OnUpdateSessionComplete(FName SessionName, bool bWasSuccessful);
+
 public:
-	// UW_SessionList가 읽어갈 검색 결과 배열
 	TArray<FOnlineSessionSearchResult> SessionResults;
 
 	FOnSessionSearchComplete OnSessionSearchComplete;
@@ -67,7 +67,6 @@ private:
 
 	FDelegateHandle DestroyCompleteDelegateHandle;
 
-	// 리슨서버가 파괴 중인 낡은 세션과 맞물렸을 때, 파괴 완료 후 자동으로 재요청하기 위한 예약값 (-1이면 예약 없음)
 	int32 PendingCreateSessionMaxPlayers = -1;
 
 	ESessionSearchPass CurrentSearchPass = ESessionSearchPass::None;
@@ -79,5 +78,7 @@ private:
 	FDelegateHandle FindCompleteDelegateHandle;
 
 	FDelegateHandle JoinCompleteDelegateHandle;
+
+	FDelegateHandle UpdateCompleteDelegateHandle;
 
 };
