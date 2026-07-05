@@ -22,7 +22,6 @@ void USXOnlineSessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	}
 }
 
-//void USXOnlineSessionSubsystem::CreateSession(int32 MaxPlayers)
 void USXOnlineSessionSubsystem::CreateSession(int32 MaxPlayers, FString InSessionName)
 {
 	if (SessionManager.IsValid() == false)
@@ -188,6 +187,50 @@ void USXOnlineSessionSubsystem::UpdateSession(const FString& InMapName)
 	SessionManager->UpdateSession(NAME_GameSession, *ExistingSettings, true);
 }
 
+void USXOnlineSessionSubsystem::StartSession()
+{
+	if (SessionManager.IsValid() == false)
+	{
+		return;
+	}
+
+	FOnlineSessionSettings* ExistingSettings = SessionManager->GetSessionSettings(NAME_GameSession);
+	if (ExistingSettings == nullptr)
+	{
+		return;
+	}
+
+	ExistingSettings->bAllowJoinInProgress = false;
+
+	FOnStartSessionCompleteDelegate StartDelegate =
+		FOnStartSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnStartSessionComplete);
+	StartCompleteDelegateHandle = SessionManager->AddOnStartSessionCompleteDelegate_Handle(StartDelegate);
+
+	SessionManager->StartSession(NAME_GameSession);
+}
+
+void USXOnlineSessionSubsystem::EndSession()
+{
+	if (SessionManager.IsValid() == false)
+	{
+		return;
+	}
+
+	FOnlineSessionSettings* ExistingSettings = SessionManager->GetSessionSettings(NAME_GameSession);
+	if (ExistingSettings == nullptr)
+	{
+		return;
+	}
+
+	ExistingSettings->bAllowJoinInProgress = true;
+
+	FOnEndSessionCompleteDelegate EndDelegate =
+		FOnEndSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnEndSessionComplete);
+	EndCompleteDelegateHandle = SessionManager->AddOnEndSessionCompleteDelegate_Handle(EndDelegate);
+
+	SessionManager->EndSession(NAME_GameSession);
+}
+
 void USXOnlineSessionSubsystem::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful)
 {
 	UE_LOG(LogTemp, Warning, TEXT("[Session] DestroySession complete. Success=%d, PendingRecreate=%d"), bWasSuccessful,
@@ -316,4 +359,14 @@ void USXOnlineSessionSubsystem::OnJoinSessionComplete(FName SessionName, EOnJoin
 void USXOnlineSessionSubsystem::OnUpdateSessionComplete(FName SessionName, bool bWasSuccessful)
 {
 	SessionManager->ClearOnUpdateSessionCompleteDelegate_Handle(UpdateCompleteDelegateHandle);
+}
+
+void USXOnlineSessionSubsystem::OnStartSessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	SessionManager->ClearOnStartSessionCompleteDelegate_Handle(StartCompleteDelegateHandle);
+}
+
+void USXOnlineSessionSubsystem::OnEndSessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	SessionManager->ClearOnEndSessionCompleteDelegate_Handle(EndCompleteDelegateHandle);
 }

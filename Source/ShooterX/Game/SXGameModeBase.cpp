@@ -7,6 +7,7 @@
 #include "Game/SXGameStateBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "ShooterX.h"
+#include "Game/SXOnlineSessionSubsystem.h"
 
 ASXGameModeBase::ASXGameModeBase()
 {
@@ -202,6 +203,12 @@ void ASXGameModeBase::OnMainTimerElapsed()
 
 		if (RemainWaitingTimeForEnding <= 0)
 		{
+			USXOnlineSessionSubsystem* Subsystem = GetGameInstance()->GetSubsystem<USXOnlineSessionSubsystem>();
+			if (IsValid(Subsystem) == true)
+			{
+				Subsystem->EndSession();
+			}
+
 			UE_LOG(LogTemp, Warning, TEXT("[RoundEnd] NetMode=%s, Alive=%d, Dead=%d"),
 				*ShooterXFunctionLibrary::GetNetModeString(this), AlivePlayerControllers.Num(), DeadPlayerControllers.Num());
 			for (auto AliveController : AlivePlayerControllers)

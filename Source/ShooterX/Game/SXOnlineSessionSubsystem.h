@@ -40,6 +40,10 @@ public:
 
 	void UpdateSession(const FString& InMapName);
 
+	void StartSession();
+
+	void EndSession();
+
 private:
 	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 
@@ -52,6 +56,10 @@ private:
 	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
 
 	void OnUpdateSessionComplete(FName SessionName, bool bWasSuccessful);
+
+	void OnStartSessionComplete(FName SessionName, bool bWasSuccessful);
+
+	void OnEndSessionComplete(FName SessionName, bool bWasSuccessful);
 
 public:
 	TArray<FOnlineSessionSearchResult> SessionResults;
@@ -80,5 +88,9 @@ private:
 	FDelegateHandle JoinCompleteDelegateHandle;
 
 	FDelegateHandle UpdateCompleteDelegateHandle;
+
+	FDelegateHandle StartCompleteDelegateHandle;
+
+	FDelegateHandle EndCompleteDelegateHandle;
 
 };

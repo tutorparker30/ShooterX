@@ -131,12 +131,17 @@ void ASXGM_Lobby::Tick(float DeltaSeconds)
 
 	if (RemainTimeForPlaying <= 0.f)
 	{
+		USXOnlineSessionSubsystem* Subsystem = GetGameInstance()->GetSubsystem<USXOnlineSessionSubsystem>();
+		if (IsValid(Subsystem) == true)
+		{
+			Subsystem->StartSession();
+		}
+
 		bIsTravelling = true;
 
 		UWorld* World = GetWorld();
 		if (IsValid(World) == true)
 		{
-			//World->ServerTravel(TEXT("L_Expanse"));
 			World->ServerTravel(TargetLevelName);
 		}
 	}
@@ -156,17 +161,6 @@ void ASXGM_Lobby::Logout(AController* Exiting)
 void ASXGM_Lobby::BeginPlay()
 {
 	Super::BeginPlay();
-
-	/*
-	if (GetNetMode() == NM_DedicatedServer || GetNetMode() == NM_ListenServer)
-	{
-		USXOnlineSessionSubsystem* Subsystem = GetGameInstance()->GetSubsystem<USXOnlineSessionSubsystem>();
-		if (IsValid(Subsystem) == true)
-		{
-			Subsystem->CreateSession(MaxSessionPlayers);
-		}
-	}
-	*/
 	
 	FString SessionName = TEXT("None");
 
