@@ -18,7 +18,7 @@ ASXGM_Lobby::ASXGM_Lobby()
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
 
-	bUseSeamlessTravel = false;
+	bUseSeamlessTravel = true;
 
 	RemainTimeForPlaying = InitialRemainTimeForPlaying;
 }

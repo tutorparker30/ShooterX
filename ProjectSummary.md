@@ -27,6 +27,7 @@
 17. [기능 완성도 요약](#17-기능-완성도-요약)
 18. [협업 방식 (Claude 작업 규칙)](#18-협업-방식-claude-작업-규칙)
 19. [TODO: 세션 이름 / 다음 레벨 정보 전달 흐름 개선](#19-todo-세션-이름--다음-레벨-정보-전달-흐름-개선)
+20. [TODO: Online Subsystem Steam 적용 (진행 중)](#20-todo-online-subsystem-steam-적용-진행-중)
 
 ---
 
@@ -1147,3 +1148,78 @@ void ASXGM_Lobby::BeginPlay()
 3. 인원 충족 후 `Tick()`에서 `TargetLevelName`(예: `L_Convolution_Blockout` 또는 `L_Expanse`)으로 `ServerTravel()`
 
 이대로 진행하면 기존에 있던 3-인자 `CreateSession()` 컴파일 에러도 자연히 해소됨.
+
+---
+
+## 20. TODO: Online Subsystem Steam 적용 (진행 중)
+
+> 2026-07-06 작성/진행 중. Steam 친구 초대·매치메이킹 등을 위해 Online Subsystem Steam을 적용하는 작업.
+> Advanced Sessions Plugin은 `IOnlineSession`/`IOnlineSubsystem` C++ API를 BP에서 쓰게 해주는 래퍼일 뿐이라
+> (이 프로젝트처럼 C++로만 직접 구현하는 경우) 불필요하다고 판단, 언리얼 공식 문서(Online Subsystem Steam) 절차를 그대로 따라 진행.
+> 엔진은 소스 빌드(`C:/UnrealProject/UnrealEngine-5.7.4-release`, `.uproject`의 EngineAssociation이 GUID로 등록된 커스텀 엔진).
+
+### 완료된 작업 (체크리스트)
+
+- **Step 1.** Steam 클라이언트 설치 및 로그인 확인
+- **Step 2.** Steamworks SDK(v1.64) 다운로드 → 엔진 `Engine/Source/ThirdParty/Steamworks/Steamv164/sdk`에 배치.
+  `Engine/Source/ThirdParty/Steamworks/Steamworks.build.cs`의 `SteamVersionNumber = 1.64`와 폴더명(`Steamv164`) 일치 확인.
+- **Step 3.** `steam_api64.dll`을 `Engine/Source/ThirdParty/Steamworks/Steamv164/sdk/redistributable_bin/win64/`에서
+  `Engine/Binaries/ThirdParty/Steamworks/Steamv164/Win64/`로 복사 (이 프로젝트는 `-force_steamclient_link`를 안 써서 `steamclient64.dll` 등은 불필요).
+- **Step 4.** 정식 Steamworks 파트너 등록($100, 서류, 30일 대기) 대신 **테스트 App ID `480`**으로 개발 진행하기로 결정.
+- **Step 5.** `Source/ShooterX/ShooterX.Build.cs` 수정
+  - `PublicDependencyModuleNames`에서 `"OnlineSubsystemNull"` 제거(주석 처리), `"OnlineSubsystem"`/`"OnlineSubsystemUtils"`는 유지
+  - `DynamicallyLoadedModuleNames.Add("OnlineSubsystemNull")`, `.Add("OnlineSubsystemSteam")` 추가
+  - 이유: `OnlineSubsystem`/`OnlineSubsystemUtils`는 코드(`SXOnlineSessionSubsystem.cpp`)에서 `#include`로 직접 참조하는 범용 인터페이스라 컴파일 타임 링크(Public)가 맞고, `OnlineSubsystemNull`/`OnlineSubsystemSteam`은 코드에서 직접 참조하지 않는 "런타임에 ini 설정으로 선택되는 구현체"라 `DynamicallyLoadedModuleNames`가 맞음. Null도 남겨둬서 ini만 바꾸면 언제든 LAN 테스트로 되돌릴 수 있게 함.
+- **Step 6.** `Config/DefaultEngine.ini`에 아래 블록 추가:
+  ```ini
+  [/Script/Engine.GameEngine]
+  +NetDriverDefinitions=(DefName="GameNetDriver",DriverClassName="OnlineSubsystemSteam.SteamNetDriver",DriverClassNameFallback="OnlineSubsystemUtils.IpNetDriver")
+
+  [OnlineSubsystem]
+  DefaultPlatformService=Steam
+
+  [OnlineSubsystemSteam]
+  bEnabled=true
+  SteamDevAppId=480
+  bInitServerOnClient=true
+
+  [/Script/OnlineSubsystemSteam.SteamNetDriver]
+  NetConnectionClassName="OnlineSubsystemSteam.SteamNetConnection"
+  ```
+  - `bInitServerOnClient=true`에 대해 처음엔 "데디서버가 Session 방식(`bUseLobbiesIfAvailable=false`)이라 필요하다"고 설명했으나, 실제 엔진 소스(`OnlineSubsystemSteam.cpp:335-357`)를 확인해보니 틀린 설명이었음. **데디서버는 `IsRunningDedicatedServer()==true`라서 이 플래그와 무관하게 GameServer API가 자동 초기화됨.** 이 플래그가 실제로 영향을 주는 대상은 **리슨서버**(Client 빌드 안에서 호스팅되므로 기본적으론 GameServer API가 안 켜짐) — 다만 지금 리슨서버 경로는 Lobby 방식(`bUseLobbiesIfAvailable=true`)이라 엄밀히는 필수는 아니고, `-server` 커맨드라인 테스트 등을 대비한 안전장치로 켜둔 상태.
+- **Step 7.** 프로젝트 빌드 + 패키징까지 완료.
+
+### 현재 막힌 지점
+
+패키징된 빌드를 실행해서 로그에서 "Online Subsystem"을 검색하면 여전히 **`Online Subsystem: Null`**로 출력됨 (`SXOnlineSessionSubsystem::Initialize()`가 찍는 로그). `[OnlineSubsystem] DefaultPlatformService=Steam`으로 설정했음에도 Steam이 아니라 Null이 로드되고 있음.
+
+### 원인 파악 완료
+
+`Engine/Plugins/Online/OnlineSubsystemSteam/OnlineSubsystemSteam.uplugin`:
+```json
+"EnabledByDefault" : false,
+```
+비교: `Engine/Plugins/Online/OnlineSubsystemNull/OnlineSubsystemNull.uplugin`:
+```json
+"EnabledByDefault" : true,
+```
+
+`OnlineSubsystemSteam`은 엔진 **플러그인**인데 기본적으로 비활성화 상태이고, `ShooterX.uproject`의 `"Plugins"` 배열에도 등록돼 있지 않음(현재 `ModelingToolsEditorMode`, `EnhancedInput`만 있음). `ShooterX.Build.cs`에 `DynamicallyLoadedModuleNames.Add("OnlineSubsystemSteam")`을 추가해도 **플러그인 자체가 비활성 상태라 그 모듈이 빌드/패키징에 아예 포함되지 않고**, 런타임에 Steam 구현체가 존재하지 않아 결국 Null로 폴백된 것으로 보임. (`OnlineSubsystemNull`은 `EnabledByDefault: true`라 지금까지 별도 설정 없이도 항상 동작했던 것.)
+
+### 다음에 할 일 (다음 세션에서 이어갈 스텝)
+
+1. `ShooterX.uproject`의 `"Plugins"` 배열에 아래 항목 추가 (또는 에디터 `Edit > Plugins`에서 "Steam" 검색 후 체크 — 그러면 uproject에 자동 반영됨):
+   ```json
+   {
+       "Name": "OnlineSubsystemSteam",
+       "Enabled": true
+   }
+   ```
+2. Visual Studio 프로젝트 파일 재생성 → 다시 빌드 (이번엔 `OnlineSubsystemSteam` 모듈이 실제로 컴파일 대상에 포함되어야 정상)
+3. 에디터 실행 후 Output Log에서 `Online Subsystem: Steam`으로 찍히는지 재확인
+4. 확인되면 다시 패키징해서 패키징된 빌드에서도 동일하게 찍히는지 확인
+5. 그 다음 실제 호스트/조인 테스트 — 접속이 이상하면 `[OnlineSubsystemSteam]`에 `bUseSteamNetworking=false` 추가 검토 (Steam P2P 대신 기존 IP 소켓 방식 유지)
+
+### 이어서 진행하는 방법
+
+다음에 "이어서하자"라고만 말하면, 이 섹션 "다음에 할 일"의 1번(`ShooterX.uproject`에 `OnlineSubsystemSteam` 플러그인 활성화)부터 지금까지와 동일하게 스텝바이스텝으로 안내 + 검수하며 계속 진행.

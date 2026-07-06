@@ -64,7 +64,8 @@ void USXOnlineSessionSubsystem::CreateSession(int32 MaxPlayers, FString InSessio
 	}
 
 	FOnlineSessionSettings SessionSettings;
-	SessionSettings.bIsLANMatch = true;
+	//SessionSettings.bIsLANMatch = true;
+	SessionSettings.bIsLANMatch = false;
 	SessionSettings.bShouldAdvertise = true; 
 	SessionSettings.NumPublicConnections = MaxPlayers;
 	SessionSettings.bAllowJoinInProgress = true;
@@ -253,7 +254,8 @@ void USXOnlineSessionSubsystem::StartSessionSearch(ESessionSearchPass InPass)
 
 	SessionSearch = MakeShared<FOnlineSessionSearch>();
 	SessionSearch->MaxSearchResults = 100;
-	SessionSearch->bIsLanQuery = true;
+	//SessionSearch->bIsLanQuery = true;
+	SessionSearch->bIsLanQuery = false;
 
 	// [검색 대상에 따라 쿼리가 갈린다]
 	// - 리슨서버 세션: Lobby 기반으로 광고되므로 SEARCH_LOBBIES 로 찾는다.
