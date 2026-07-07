@@ -29,7 +29,11 @@ public class ShooterX : ModuleRules
 				"UMG", "Slate", "SlateCore",
 
 				// Online Subsystem
-				"OnlineSubsystem", "OnlineSubsystemUtils", /*"OnlineSubsystemNull",*/
+				"OnlineSubsystem", "OnlineSubsystemUtils",
+
+				// GameplayAbilitySystem
+				"GameplayAbilities", "GameplayTags",
+
 			}
 		);
 
