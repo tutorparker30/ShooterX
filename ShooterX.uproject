@@ -21,7 +21,8 @@
 				"Engine",
 				"AIModule",
 				"UMG",
-				"ShooterXPlayGround"
+				"ShooterXPlayGround",
+				"GameplayAbilities"
 			]
 		}
 	],
