@@ -10,4 +10,7 @@ namespace SXGameplayTags
 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Movement_Rotating);
 
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Test);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Jump);
+
 }
