@@ -4,6 +4,7 @@
 #include "SX_GA_CharacterJump.h"
 
 #include "GameFramework/Character.h"
+#include "GameplayAbilitySystem/AT/SX_AT_JumpAndWaitForLanding.h"
 
 USX_GA_CharacterJump::USX_GA_CharacterJump()
 {
@@ -13,26 +14,67 @@ USX_GA_CharacterJump::USX_GA_CharacterJump()
 	ReplicationPolicy = EGameplayAbilityReplicationPolicy::ReplicateNo;
 }
 
+bool USX_GA_CharacterJump::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags) const
+{
+	if (!Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags))
+	{
+		return false;
+	}
+
+	const ACharacter* Character = CastChecked<ACharacter>(ActorInfo->AvatarActor.Get(), ECastCheckedType::NullAllowed);
+	return (Character && Character->CanJump());
+}
+
 void USX_GA_CharacterJump::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
-	if (IsValid(Character) == true)
+	if (HasAuthorityOrPredictionKey(ActorInfo, &ActivationInfo))
 	{
-		Character->Jump();
-		// ACharacter::Jump()는 CharacterMovementComponent를 통해 로컬/서버 양쪽에서
-		// 동일하게 이동을 처리하므로, 여기서는 추가 복제 로직 없이 그대로 호출.
+		if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
+		{
+			return;
+		}
+
+		/*
+		ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
+		if (IsValid(Character) == true)
+		{
+			Character->Jump();
+		}
+		*/
+
+		USX_AT_JumpAndWaitForLanding* JumpTask = USX_AT_JumpAndWaitForLanding::CreateTask(this);
+		JumpTask->OnComplete.AddDynamic(this, &ThisClass::OnLanded);
+		JumpTask->ReadyForActivation();
 	}
 }
 
-void USX_GA_CharacterJump::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
+void USX_GA_CharacterJump::InputReleased(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo)
 {
-	ACharacter* Character = Cast<ACharacter>(ActorInfo->AvatarActor.Get());
-	if (IsValid(Character) == true)
+	/*
+	if (ActorInfo != NULL && ActorInfo->AvatarActor != NULL)
 	{
-		Character->StopJumping();
+		CancelAbility(Handle, ActorInfo, ActivationInfo, true);
+	}
+	*/
+}
+
+void USX_GA_CharacterJump::OnLanded()
+{
+	CancelAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
+}
+
+void USX_GA_CharacterJump::CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility)
+{
+	if (ScopeLockCount > 0)
+	{
+		WaitingToExecute.Add(FPostLockDelegate::CreateUObject(this, &ThisClass::CancelAbility, Handle, ActorInfo, ActivationInfo, bReplicateCancelAbility));
+		return;
 	}
 
-	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+	Super::CancelAbility(Handle, ActorInfo, ActivationInfo, bReplicateCancelAbility);
+
+	ACharacter* Character = CastChecked<ACharacter>(ActorInfo->AvatarActor.Get());
+	Character->StopJumping();
 }

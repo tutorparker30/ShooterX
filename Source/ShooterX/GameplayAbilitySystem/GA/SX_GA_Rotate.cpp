@@ -12,8 +12,13 @@ USX_GA_Rotate::USX_GA_Rotate()
 	NetSecurityPolicy = EGameplayAbilityNetSecurityPolicy::ServerOnly;
 	ReplicationPolicy = EGameplayAbilityReplicationPolicy::ReplicateNo;
 
-	AbilityTags.AddTag(SXGameplayTags::Ability_Gimmick_Rotate);
-	ActivationOwnedTags.AddTag(SXGameplayTags::State_Movement_Rotating);
+	FGameplayTagContainer InAssetTags;
+	InAssetTags.AddTag(SXGameplayTags::Ability_ID_Action_Movement_Rotate);
+	InAssetTags.AddTag(SXGameplayTags::Ability_Type_Action_Movement_Rotate);
+	SetAssetTags(InAssetTags);
+		// UE5부터 AbilityTags 대신에 AssetTags를 사용하게끔 권장함.
+
+	ActivationOwnedTags.AddTag(SXGameplayTags::State_Action_Movement_Rotating);
 }
 
 void USX_GA_Rotate::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)

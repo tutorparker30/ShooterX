@@ -15,6 +15,7 @@ class UInputMappingContext;
 class UInputAction;
 class UAbilitySystemComponent;
 class UGameplayAbility;
+class UAnimMontage;
 
 /**
  *
@@ -90,6 +91,10 @@ private:
 	void HandleGameplayAbilityInputPressed(FGameplayTag InputTag);
 
 	void HandleGameplayAbilityInputReleased(FGameplayTag InputTag);
+
+public:
+	UPROPERTY(EditDefaultsOnly, Category = "ASXGASPlayerCharacter|GameplayAbilitySystem")
+	TObjectPtr<UAnimMontage> TestMontage;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "ASXGASPlayerCharacter|GameplayAbilitySystem")

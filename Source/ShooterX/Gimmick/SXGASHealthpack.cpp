@@ -89,9 +89,9 @@ void ASXGASHealthpack::OnTimerElapsed()
 	}
 	*/
 
-	FGameplayTagContainer TargetTag(SXGameplayTags::Ability_Gimmick_Rotate);
+	FGameplayTagContainer TargetTag(SXGameplayTags::Ability_ID_Action_Movement_Rotate);
 
-	if (ASC->HasMatchingGameplayTag(SXGameplayTags::State_Movement_Rotating) == false)
+	if (ASC->HasMatchingGameplayTag(SXGameplayTags::State_Action_Movement_Rotating) == false)
 	{
 		ASC->TryActivateAbilitiesByTag(TargetTag);
 	}

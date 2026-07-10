@@ -91,6 +91,8 @@ void ASXGASPlayerCharacter::BeginPlay()
 	checkf(IsValid(EILPS) == true, TEXT("EnhancedInputLocalPlayerSubsystem is invalid."));
 
 	EILPS->AddMappingContext(InputMappingContext, 0);
+
+	PC->ConsoleCommand(TEXT("ShowDebug AbilitySystem"));
 }
 
 void ASXGASPlayerCharacter::PossessedBy(AController* NewController)
