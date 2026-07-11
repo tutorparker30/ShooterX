@@ -22,4 +22,6 @@ namespace SXGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Jump);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Play_TestMontage);
 
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Action_Combat_Melee_CheckHit);
+
 }

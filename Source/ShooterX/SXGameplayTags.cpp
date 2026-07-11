@@ -19,5 +19,7 @@ namespace SXGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Test, "InputTag.Test", "테스트 입력 태그");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Jump, "InputTag.Jump", "점프 입력 태그");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Play_TestMontage, "InputTag.Play.TestMontage", "테스트 입력 태그");
+	
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Event_Action_Combat_Melee_CheckHit, "Event.Action.Combat.Melee.CheckHit", "근접 공격 히트 체크 이벤트 태그");
 
 }
