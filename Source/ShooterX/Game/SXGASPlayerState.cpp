@@ -4,6 +4,7 @@
 #include "Game/SXGASPlayerState.h"
 
 #include "AbilitySystemComponent.h"
+#include "GameplayAbilitySystem/AS/SX_AS_Character.h"
 
 ASXGASPlayerState::ASXGASPlayerState()
 {
@@ -13,6 +14,8 @@ ASXGASPlayerState::ASXGASPlayerState()
 	ASC = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("ASC"));
 	ASC->SetIsReplicated(true);
 	ASC->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
+
+	AttributeSet = CreateDefaultSubobject<USX_AS_Character>(TEXT("AttributeSet"));
 }
 
 UAbilitySystemComponent* ASXGASPlayerState::GetAbilitySystemComponent() const

@@ -6,6 +6,7 @@
 #include "GameplayAbilitySystem/AT/SX_AT_SweepSingleCapsule.h"
 #include "GameplayAbilitySystem/TA/SX_TA_SweepSingleCapsule.h"
 #include "SXGameplayTags.h"
+#include "GameplayAbilitySystem/AS/SX_AS_Character.h"
 
 USX_GA_CheckHit::USX_GA_CheckHit()
 {
@@ -36,16 +37,29 @@ void USX_GA_CheckHit::OnSweepSingleCapsuleResultReady(const FGameplayAbilityTarg
 {
 	const bool bHasHitResult = UAbilitySystemBlueprintLibrary::TargetDataHasHitResult(TargetDataHandle, 0);
 
-	if (bHasHitResult == true && HasAuthority(&CurrentActivationInfo) == true)
+	if (true == bHasHitResult && HasAuthority(&CurrentActivationInfo) == true)
 	{
-		// ### 서버 권위 검증 ###
-		// 클라이언트(소유 클라이언트)가 스윕한 결과는 여기까지 오지도 않음 — 클라이언트에서
-		// 실행된 이 함수는 그냥 자기 스윕 결과를 로컬에서 확인만 하고 끝(연출/디버그용).
-		// 실제 대미지로 이어지는 GameplayEffect 적용은 반드시 서버에서 "서버 자신의" 스윕 결과로만 수행.
-		// (HasAuthority(&CurrentActivationInfo)는 어빌리티가 서버 권위 하에 실행 중인지를 판별하는
-		//  UGameplayAbility의 헬퍼 함수. GE 적용은 19.6에서 AttributeSet과 함께 이어서 구현.)
 		const FHitResult HitResult = UAbilitySystemBlueprintLibrary::GetHitResultFromTargetData(TargetDataHandle, 0);
-		UE_LOG(LogTemp, Log, TEXT("[Server] Target %s Detected"), *(HitResult.GetActor()->GetName()));
+		//UE_LOG(LogTemp, Log, TEXT("[Server] Target %s Detected"), *(HitResult.GetActor()->GetName()));
+
+		UAbilitySystemComponent* SourceASC = GetAbilitySystemComponentFromActorInfo_Ensured();
+		UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(HitResult.GetActor());
+		if (IsValid(SourceASC) == false || IsValid(TargetASC) == false)
+		{
+			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+			return;
+		}
+
+		const USX_AS_Character* SourceAttributeSet = SourceASC->GetSet<USX_AS_Character>();
+		USX_AS_Character* TargetAttributeSet = const_cast<USX_AS_Character*>(TargetASC->GetSet<USX_AS_Character>());
+		if (IsValid(SourceAttributeSet) == false || IsValid(TargetAttributeSet) == false)
+		{
+			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+			return;
+		}
+
+		const float AttackDamage = SourceAttributeSet->GetAttackDamage();
+		TargetAttributeSet->SetHealth(TargetAttributeSet->GetHealth() - AttackDamage);
 	}
 
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);

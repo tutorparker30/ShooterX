@@ -5,6 +5,9 @@
 #include "Abilities/GameplayAbility.h"
 #include "GameFramework/Character.h"
 #include "Components/CapsuleComponent.h"
+#include "AbilitySystemBlueprintLibrary.h"
+#include "AbilitySystemComponent.h"
+#include "GameplayAbilitySystem/AS/SX_AS_Character.h"
 
 static TAutoConsoleVariable<int32> CVarDrawSweepSingleSphere(
 	TEXT("sx.DrawSweepSingleSphere"),
@@ -64,14 +67,27 @@ FGameplayAbilityTargetDataHandle ASX_TA_SweepSingleCapsule::MakeTargetData() con
 	}
 
 	const UCapsuleComponent* CapsuleComponent =	SourceCharacter->GetCapsuleComponent();
-
 	if (IsValid(CapsuleComponent) == false)
 	{
 		return DataHandle;
 	}
 
-	const float AttackRange = 100.f;
-	const float AttackRadius = 50.f;
+	UAbilitySystemComponent* SourceASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(SourceCharacter);
+	if (IsValid(SourceASC) == false)
+	{
+		return FGameplayAbilityTargetDataHandle();
+	}
+
+	const USX_AS_Character* SourceAttributeSet = SourceASC->GetSet<USX_AS_Character>();
+	if (IsValid(SourceAttributeSet) == false)
+	{
+		return FGameplayAbilityTargetDataHandle();
+	}
+
+	//const float AttackRange = 100.f;
+	//const float AttackRadius = 50.f;
+	const float AttackRange = SourceAttributeSet->GetAttackRange();
+	const float AttackRadius = SourceAttributeSet->GetAttackRadius();
 
 	const FVector Forward = SourceCharacter->GetActorForwardVector();
 	const FVector Start = SourceCharacter->GetActorLocation() + Forward * SourceCharacter->GetCapsuleComponent()->GetScaledCapsuleRadius();

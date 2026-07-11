@@ -1,32 +1,36 @@
-// SXGASPlayerState.h
+// SXGASNonPlayerCharacter.h
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/PlayerState.h"
+#include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h"
-#include "SXGASPlayerState.generated.h"
+#include "SXGASNonPlayerCharacter.generated.h"
 
+class UAbilitySystemComponent;
 class USX_AS_Character;
 
 UCLASS()
-class SHOOTERX_API ASXGASPlayerState 
-	: public APlayerState
+class SHOOTERX_API ASXGASNonPlayerCharacter 
+	: public ACharacter
 	, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
 public:
-	ASXGASPlayerState();
+	ASXGASNonPlayerCharacter();
+
+protected:
+	virtual void BeginPlay() override;
 
 public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 protected:
-	UPROPERTY(EditAnywhere, Category = "ASXGASPlayerState|Component")
+	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UAbilitySystemComponent> ASC;
 
-	UPROPERTY(EditDefaultsOnly, Category = "ASXGASPlayerState|GameplayAbilitySystem")
+	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USX_AS_Character> AttributeSet;
 
 };
