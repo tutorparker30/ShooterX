@@ -27,6 +27,8 @@ class SHOOTERX_API ASXGASPlayerCharacter
 {
 	GENERATED_BODY()
 
+	friend class USX_GE_Damage;
+
 #pragma region ACharacter Override
 
 public:

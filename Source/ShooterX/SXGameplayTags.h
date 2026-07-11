@@ -24,4 +24,6 @@ namespace SXGameplayTags
 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Action_Combat_Melee_CheckHit);
 
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(SetByCaller_Damage);
+
 }

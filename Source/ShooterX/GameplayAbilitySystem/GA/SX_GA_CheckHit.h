@@ -6,6 +6,8 @@
 #include "Abilities/GameplayAbility.h"
 #include "SX_GA_CheckHit.generated.h"
 
+class UGameplayEffect;
+
 UCLASS()
 class SHOOTERX_API USX_GA_CheckHit : public UGameplayAbility
 {
@@ -19,5 +21,9 @@ public:
 protected:
 	UFUNCTION()
 	void OnSweepSingleCapsuleResultReady(const FGameplayAbilityTargetDataHandle& TargetDataHandle);
+
+protected:
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UGameplayEffect> AttackDamageEffect;
 
 };
