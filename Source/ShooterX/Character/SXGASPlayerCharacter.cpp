@@ -11,6 +11,9 @@
 #include "EnhancedInputComponent.h"
 #include "Game/SXGASPlayerState.h"
 #include "AbilitySystemComponent.h"
+#include "Component/SXGASWidgetComponent.h"
+#include "UI/SXGASUserWidget.h"
+#include "GameplayAbilitySystem/AS/SX_AS_Character.h"
 
 ASXGASPlayerCharacter::ASXGASPlayerCharacter()
 {
@@ -42,6 +45,18 @@ ASXGASPlayerCharacter::ASXGASPlayerCharacter()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->bUsePawnControlRotation = false;
 	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
+
+	HPBar = CreateDefaultSubobject<USXGASWidgetComponent>(TEXT("HPBar"));
+	HPBar->SetupAttachment(GetMesh());
+	HPBar->SetRelativeLocation(FVector(0.0f, 0.0f, 180.0f));
+	static ConstructorHelpers::FClassFinder<UUserWidget> HpBarWidgetRef(TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/ShooterX/UI/WBP_GASHPBar.WBP_GASHPBar_C'"));
+	if (HpBarWidgetRef.Class)
+	{
+		HPBar->SetWidgetClass(HpBarWidgetRef.Class);
+		HPBar->SetWidgetSpace(EWidgetSpace::Screen);
+		HPBar->SetDrawSize(FVector2D(200.0f, 20.f));
+		HPBar->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 }
 
 void ASXGASPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -102,6 +117,12 @@ void ASXGASPlayerCharacter::PossessedBy(AController* NewController)
 	if (HasAuthority() == true)
 	{
 		InitializeGASCharacterInfo();
+
+		const USX_AS_Character* CurrentAttributeSet = GetAbilitySystemComponent()->GetSet<USX_AS_Character>();
+		if (IsValid(CurrentAttributeSet) == true)
+		{
+			CurrentAttributeSet->OnOutOfHealth.AddDynamic(this, &ThisClass::OnOutOfHealth);
+		}
 	}
 }
 
@@ -246,5 +267,13 @@ void ASXGASPlayerCharacter::HandleGameplayAbilityInputReleased(FGameplayTag Inpu
 				CachedASC->AbilitySpecInputReleased(AbilitySpec);
 			}
 		}
+	}
+}
+
+void ASXGASPlayerCharacter::OnOutOfHealth()
+{
+	if (HasAuthority() == true)
+	{
+		SetLifeSpan(0.1f);
 	}
 }

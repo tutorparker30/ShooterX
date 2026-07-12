@@ -17,6 +17,8 @@ namespace SXGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Action_Movement_Rotating);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Action_Movement_Jumping);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Action_Combat_PlayingTestMontage);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Condition_Combat_Dead);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Condition_Combat_Invincible);
 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Test);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Jump);

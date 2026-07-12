@@ -15,6 +15,8 @@ namespace SXGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Action_Movement_Rotating, "State.Action.Movement.Rotating", "회전 중을 뜻하는 상태 태그");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Action_Movement_Jumping, "State.Action.Movement.Jumping", "점프 중 상태 태그");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Action_Combat_PlayingTestMontage, "State.Action.Combat.PlayingTestMontage", "테스트 상태 태그");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Condition_Combat_Dead, "State.Condition.Combat.Dead", "죽음 상태 태그");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Condition_Combat_Invincible, "State.Condition.Combat.Invincible", "무적 상태 태그");
 	
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Test, "InputTag.Test", "테스트 입력 태그");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Jump, "InputTag.Jump", "점프 입력 태그");

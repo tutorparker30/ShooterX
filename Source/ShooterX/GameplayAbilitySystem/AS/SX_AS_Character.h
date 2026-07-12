@@ -14,6 +14,8 @@
 	GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
 		// 게터/세터를 매번 손으로 만들지 않도록 어트리뷰트 셋 전용 매크로가 엔진에서 제공됨.
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnOutOfHealthDelegate);
+
 UCLASS()
 class SHOOTERX_API USX_AS_Character : public UAttributeSet
 {
@@ -40,6 +42,8 @@ public:
 
 	ATTRIBUTE_ACCESSORS(ThisClass, MetaDamage);
 
+	virtual bool PreGameplayEffectExecute(struct FGameplayEffectModCallbackData& Data) override;
+
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 
 protected:
@@ -48,6 +52,11 @@ protected:
 
 	UFUNCTION()
 	virtual void OnRep_MaxHealth(const FGameplayAttributeData& OldValue);
+
+public:
+	mutable FOnOutOfHealthDelegate OnOutOfHealth;
+		// const USX_AS_Character* CurrentAttributeSet = GetAbilitySystemComponent()->GetSet<USX_AS_Character>();
+		// GetSet() 함수의 반환 자료형이 const이기 때문에 OnOutOfHealth 속성의 자료형은 mutable로 지정.
 
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "USX_AS_Character|Attack", Meta = (AllowPrivateAccess = true))
@@ -67,5 +76,7 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "USX_AS_Character|Health", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData MetaDamage;
+
+	bool bOutOfHealth = false;
 
 };

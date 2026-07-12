@@ -4,6 +4,7 @@
 
 #include "Net/UnrealNetwork.h"
 #include "GameplayEffectExtension.h"
+#include "SXGameplayTags.h"
 
 USX_AS_Character::USX_AS_Character()
 	: AttackRange(100.f)
@@ -49,6 +50,26 @@ void USX_AS_Character::PostAttributeChange(const FGameplayAttribute& Attribute, 
 	}
 }
 
+bool USX_AS_Character::PreGameplayEffectExecute(FGameplayEffectModCallbackData& Data)
+{
+	if (Super::PreGameplayEffectExecute(Data) == false)
+	{
+		return false;
+	}
+
+	if (Data.EvaluatedData.Attribute == GetMetaDamageAttribute() && KINDA_SMALL_NUMBER <= Data.EvaluatedData.Magnitude)
+	{
+		if (Data.Target.HasMatchingGameplayTag(SXGameplayTags::State_Condition_Combat_Invincible) == true)
+		{
+			Data.EvaluatedData.Magnitude = 0.0f;
+			return false;
+		}
+	}
+
+	return true;
+}
+
+
 void USX_AS_Character::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {
 	Super::PostGameplayEffectExecute(Data);
@@ -69,6 +90,16 @@ void USX_AS_Character::PostGameplayEffectExecute(const FGameplayEffectModCallbac
 		SetHealth(FMath::Clamp(GetHealth() - GetMetaDamage(), MinimumHealth, GetMaxHealth()));
 		SetMetaDamage(0.f);
 	}
+
+	if ((GetHealth() <= 0.0f) && bOutOfHealth == false)
+	{
+		Data.Target.AddLooseGameplayTag(SXGameplayTags::State_Condition_Combat_Dead);
+		OnOutOfHealth.Broadcast();
+
+		SetHealth(0.0f);
+	}
+
+	bOutOfHealth = (GetHealth() <= 0.0f);
 }
 
 void USX_AS_Character::OnRep_Health(const FGameplayAttributeData& OldValue)

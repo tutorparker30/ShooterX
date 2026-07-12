@@ -49,6 +49,12 @@ void USX_GA_CheckHit::OnSweepSingleCapsuleResultReady(const FGameplayAbilityTarg
 			EffectSpecHandle.Data->SetSetByCallerMagnitude(SXGameplayTags::SetByCaller_Damage, -SourceAttributeSet->GetAttackDamage());
 			ApplyGameplayEffectSpecToTarget(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, EffectSpecHandle, TargetDataHandle);
 		}
+
+		FGameplayEffectSpecHandle BuffEffectSpecHandle = MakeOutgoingGameplayEffectSpec(AttackRadiusBuffEffect);
+		if (BuffEffectSpecHandle.IsValid())
+		{
+			ApplyGameplayEffectSpecToOwner(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, BuffEffectSpecHandle);
+		}
 	}
 
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);

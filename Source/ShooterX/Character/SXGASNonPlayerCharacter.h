@@ -10,6 +10,8 @@
 class UAbilitySystemComponent;
 class USX_AS_Character;
 class UGameplayEffect;
+class USXGASWidgetComponent;
+class UGameplayAbility;
 
 UCLASS()
 class SHOOTERX_API ASXGASNonPlayerCharacter 
@@ -21,11 +23,14 @@ class SHOOTERX_API ASXGASNonPlayerCharacter
 public:
 	ASXGASNonPlayerCharacter();
 
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
 protected:
 	virtual void BeginPlay() override;
 
-public:
-	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+private:
+	UFUNCTION()
+	virtual void OnOutOfHealth();
 
 protected:
 	UPROPERTY(VisibleAnywhere)
@@ -39,5 +44,11 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	float Level;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ASXGASPlayerCharacter|Component")
+	TObjectPtr<USXGASWidgetComponent> HPBar;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UGameplayAbility> InvincibilityAbilityClass;
 
 };

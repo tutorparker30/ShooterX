@@ -28,4 +28,7 @@ protected:
 
 	float CurrentLevel = 1.0f;
 
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UGameplayEffect> AttackRadiusBuffEffect;
+
 };

@@ -7,6 +7,7 @@
 #include "InputActionValue.h"
 #include "AbilitySystemInterface.h"
 #include "GameplayAbilitySystem/SXGameplayAbilitySet.h"
+#include "GameplayTagContainer.h"
 #include "SXGASPlayerCharacter.generated.h"
 
 class UCameraComponent;
@@ -16,6 +17,7 @@ class UInputAction;
 class UAbilitySystemComponent;
 class UGameplayAbility;
 class UAnimMontage;
+class USXGASWidgetComponent;
 
 /**
  *
@@ -58,6 +60,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ASXGASPlayerCharacter|Component")
 	TObjectPtr<UCameraComponent> Camera;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ASXGASPlayerCharacter|Component")
+	TObjectPtr<USXGASWidgetComponent> HPBar;
+
 #pragma endregion
 
 #pragma region Input
@@ -93,6 +98,9 @@ private:
 	void HandleGameplayAbilityInputPressed(FGameplayTag InputTag);
 
 	void HandleGameplayAbilityInputReleased(FGameplayTag InputTag);
+
+	UFUNCTION()
+	void OnOutOfHealth();
 
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "ASXGASPlayerCharacter|GameplayAbilitySystem")

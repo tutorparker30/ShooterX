@@ -5,6 +5,8 @@
 #include "Components/CapsuleComponent.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayAbilitySystem/AS/SX_AS_Character.h"
+#include "Component/SXGASWidgetComponent.h"
+#include "UI/SXGASUserWidget.h"
 
 ASXGASNonPlayerCharacter::ASXGASNonPlayerCharacter()
 {
@@ -25,6 +27,18 @@ ASXGASNonPlayerCharacter::ASXGASNonPlayerCharacter()
 	ASC->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 
 	AttributeSet = CreateDefaultSubobject<USX_AS_Character>(TEXT("AttributeSet"));
+
+	HPBar = CreateDefaultSubobject<USXGASWidgetComponent>(TEXT("HPBar"));
+	HPBar->SetupAttachment(GetMesh());
+	HPBar->SetRelativeLocation(FVector(0.0f, 0.0f, 180.0f));
+	static ConstructorHelpers::FClassFinder<UUserWidget> HpBarWidgetRef(TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/ShooterX/UI/WBP_GASHPBar.WBP_GASHPBar_C'"));
+	if (HpBarWidgetRef.Class)
+	{
+		HPBar->SetWidgetClass(HpBarWidgetRef.Class);
+		HPBar->SetWidgetSpace(EWidgetSpace::Screen);
+		HPBar->SetDrawSize(FVector2D(200.0f, 20.f));
+		HPBar->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 }
 
 void ASXGASNonPlayerCharacter::BeginPlay()
@@ -44,10 +58,24 @@ void ASXGASNonPlayerCharacter::BeginPlay()
 		{
 			ASC->BP_ApplyGameplayEffectSpecToSelf(EffectSpecHandle);
 		}
+
+		FGameplayAbilitySpec InvincibilityAbilitySpec(InvincibilityAbilityClass);
+		ASC->GiveAbility(InvincibilityAbilitySpec);
+		ASC->TryActivateAbilityByClass(InvincibilityAbilityClass);
 	}
+
+	AttributeSet->OnOutOfHealth.AddDynamic(this, &ThisClass::OnOutOfHealth);
 }
 
 UAbilitySystemComponent* ASXGASNonPlayerCharacter::GetAbilitySystemComponent() const
 {
 	return ASC;
+}
+
+void ASXGASNonPlayerCharacter::OnOutOfHealth()
+{
+	if (HasAuthority() == true)
+	{
+		SetLifeSpan(0.1f);
+	}
 }
