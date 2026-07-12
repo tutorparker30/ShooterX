@@ -32,6 +32,19 @@ void ASXGASNonPlayerCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	ASC->InitAbilityActorInfo(this, this);
+
+	Level = 3;
+
+	if (HasAuthority() == true)
+	{
+		FGameplayEffectContextHandle EffectContextHandle = ASC->MakeEffectContext();
+		EffectContextHandle.AddSourceObject(this);
+		FGameplayEffectSpecHandle EffectSpecHandle = ASC->MakeOutgoingSpec(InitStatEffect, Level, EffectContextHandle);
+		if (EffectSpecHandle.IsValid())
+		{
+			ASC->BP_ApplyGameplayEffectSpecToSelf(EffectSpecHandle);
+		}
+	}
 }
 
 UAbilitySystemComponent* ASXGASNonPlayerCharacter::GetAbilitySystemComponent() const

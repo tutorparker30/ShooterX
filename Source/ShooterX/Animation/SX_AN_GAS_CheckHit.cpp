@@ -26,6 +26,7 @@ void USX_AN_GAS_CheckHit::Notify(USkeletalMeshComponent* MeshComp, UAnimSequence
 		{
 			FGameplayEventData PayloadData;
 			PayloadData.EventTag = TriggerGameplayTag;
+			PayloadData.EventMagnitude = AttackLevel;
 			UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(OwnerActor, TriggerGameplayTag, PayloadData);
 		}
 	}

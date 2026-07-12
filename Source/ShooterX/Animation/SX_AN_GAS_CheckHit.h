@@ -24,4 +24,7 @@ protected:
 	UPROPERTY(EditAnywhere)
 	FGameplayTag TriggerGameplayTag;
 
+	UPROPERTY(EditAnywhere)
+	float AttackLevel = 1.0f;
+
 };

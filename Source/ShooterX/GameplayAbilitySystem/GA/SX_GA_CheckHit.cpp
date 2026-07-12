@@ -26,6 +26,8 @@ void USX_GA_CheckHit::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
+	CurrentLevel = (TriggerEventData != nullptr) ? TriggerEventData->EventMagnitude : 1.f;
+
 	USX_AT_SweepSingleCapsule* AttackTraceTask = USX_AT_SweepSingleCapsule::CreateTask(this, ASX_TA_SweepSingleCapsule::StaticClass());
 	AttackTraceTask->OnComplete.AddDynamic(this, &ThisClass::OnSweepSingleCapsuleResultReady);
 	AttackTraceTask->ReadyForActivation();
@@ -40,7 +42,8 @@ void USX_GA_CheckHit::OnSweepSingleCapsuleResultReady(const FGameplayAbilityTarg
 		UAbilitySystemComponent* SourceASC = GetAbilitySystemComponentFromActorInfo_Ensured();
 		const USX_AS_Character* SourceAttributeSet = SourceASC->GetSet<USX_AS_Character>();
 
-		FGameplayEffectSpecHandle EffectSpecHandle = MakeOutgoingGameplayEffectSpec(AttackDamageEffect);
+		//FGameplayEffectSpecHandle EffectSpecHandle = MakeOutgoingGameplayEffectSpec(AttackDamageEffect);
+		FGameplayEffectSpecHandle EffectSpecHandle = MakeOutgoingGameplayEffectSpec(AttackDamageEffect, CurrentLevel);
 		if (EffectSpecHandle.IsValid() == true)
 		{
 			EffectSpecHandle.Data->SetSetByCallerMagnitude(SXGameplayTags::SetByCaller_Damage, -SourceAttributeSet->GetAttackDamage());

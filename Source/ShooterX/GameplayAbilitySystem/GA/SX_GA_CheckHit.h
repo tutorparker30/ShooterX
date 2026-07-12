@@ -26,4 +26,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UGameplayEffect> AttackDamageEffect;
 
+	float CurrentLevel = 1.0f;
+
 };

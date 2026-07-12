@@ -3,6 +3,7 @@
 #include "GameplayAbilitySystem/AS/SX_AS_Character.h"
 
 #include "Net/UnrealNetwork.h"
+#include "GameplayEffectExtension.h"
 
 USX_AS_Character::USX_AS_Character()
 	: AttackRange(100.f)
@@ -10,6 +11,7 @@ USX_AS_Character::USX_AS_Character()
 	, AttackDamage(10.f)
 	, Health(100.f)
 	, MaxHealth(100.f)
+	, MetaDamage(0.f)
 {
 	InitHealth(GetMaxHealth());
 }
@@ -30,6 +32,11 @@ void USX_AS_Character::PreAttributeChange(const FGameplayAttribute& Attribute, f
 	{
 		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxHealth());
 	}
+
+	if (Attribute == GetMetaDamageAttribute())
+	{
+		NewValue = (NewValue < 0.f) ? 0.f : NewValue;
+	}
 }
 
 void USX_AS_Character::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
@@ -39,6 +46,28 @@ void USX_AS_Character::PostAttributeChange(const FGameplayAttribute& Attribute, 
 	if (Attribute == GetHealthAttribute())
 	{
 		UE_LOG(LogTemp, Log, TEXT("Health : %.1f -> %.1f"), OldValue, NewValue);
+	}
+}
+
+void USX_AS_Character::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
+{
+	Super::PostGameplayEffectExecute(Data);
+
+	const float MinimumHealth = 0.f;
+
+	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
+	{
+		SetHealth(FMath::Clamp(GetHealth(), MinimumHealth, GetMaxHealth()));
+	}
+	else if (Data.EvaluatedData.Attribute == GetMetaDamageAttribute())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[Server] MetaDamage : %.1f"), GetMetaDamage());
+
+		// 이 위치에서 FinalDamage = FMath::Max(GetMetaDamage() - GetDefense(), 0.f); 과 같은 코드로
+		// 메타 데미지에서 방어력을 제하고 적용한다던지 할 수 있음.
+
+		SetHealth(FMath::Clamp(GetHealth() - GetMetaDamage(), MinimumHealth, GetMaxHealth()));
+		SetMetaDamage(0.f);
 	}
 }
 

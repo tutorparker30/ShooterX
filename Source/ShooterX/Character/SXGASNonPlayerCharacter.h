@@ -9,6 +9,7 @@
 
 class UAbilitySystemComponent;
 class USX_AS_Character;
+class UGameplayEffect;
 
 UCLASS()
 class SHOOTERX_API ASXGASNonPlayerCharacter 
@@ -32,5 +33,11 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USX_AS_Character> AttributeSet;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UGameplayEffect> InitStatEffect;
+
+	UPROPERTY(EditAnywhere)
+	float Level;
 
 };

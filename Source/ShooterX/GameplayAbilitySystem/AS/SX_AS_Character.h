@@ -38,6 +38,10 @@ public:
 
 	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
 
+	ATTRIBUTE_ACCESSORS(ThisClass, MetaDamage);
+
+	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
+
 protected:
 	UFUNCTION()
 	virtual void OnRep_Health(const FGameplayAttributeData& OldValue);
@@ -60,5 +64,8 @@ protected:
 
 	UPROPERTY(ReplicatedUsing = OnRep_MaxHealth, BlueprintReadOnly, Category = "USX_AS_Character|Health", Meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData MaxHealth;
+
+	UPROPERTY(BlueprintReadOnly, Category = "USX_AS_Character|Health", Meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData MetaDamage;
 
 };
