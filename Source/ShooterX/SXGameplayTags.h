@@ -28,4 +28,8 @@ namespace SXGameplayTags
 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(SetByCaller_Damage);
 
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Action_Combat_Hit);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Action_Interation_Open);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Action_Combat_Hit_Periodic);
+
 }

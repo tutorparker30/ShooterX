@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "AbilitySystemInterface.h"
+#include "SXGameplayTags.h"
 #include "SXGASHealthpack.generated.h"
 
 class USceneComponent;
@@ -13,6 +14,7 @@ class UStaticMeshComponent;
 class UAbilitySystemComponent;
 class URotatingMovementComponent;
 class UGameplayAbility;
+class UGameplayEffect;
 
 UCLASS()
 class SHOOTERX_API ASXGASHealthpack 
@@ -27,6 +29,20 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 	virtual void BeginPlay() override;
+
+	virtual void NotifyActorBeginOverlap(AActor* Other) override;
+
+protected:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	void ApplyEffectToTarget(AActor* Target);
+
+	void InvokeGameplayCue(AActor* Target);
+
+	UFUNCTION()
+	void OnRep_IsUsed();
+
+	void UpdateUsedVisual();
 
 private:
 	void OnTimerElapsed();
@@ -51,5 +67,14 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "SXGASHealthpack|GAS")
 	TArray<TSubclassOf<UGameplayAbility>> GrantedAbilities;
+
+	UPROPERTY(ReplicatedUsing = OnRep_IsUsed)
+	bool bIsUsed = false;
+
+	UPROPERTY(EditAnywhere, Category = "SXGASHealthpack|GAS")
+	TSubclassOf<UGameplayEffect> GameplayEffectClass;
+
+	UPROPERTY(EditAnywhere, Category = "SXGASHealthpack|GAS")
+	FGameplayTag GameplayCueTag;
 
 };

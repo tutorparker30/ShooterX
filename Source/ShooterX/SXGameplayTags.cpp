@@ -26,4 +26,8 @@ namespace SXGameplayTags
 	
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(SetByCaller_Damage, "SetByCaller.Damage", "");
 
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayCue_Action_Combat_Hit, "GameplayCue.Action.Combat.Hit", "");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayCue_Action_Interation_Open, "GameplayCue.Action.Interaction.Open", "");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayCue_Action_Combat_Hit_Periodic, "GameplayCue.Action.Combat.Hit.Periodic", "");
+
 }

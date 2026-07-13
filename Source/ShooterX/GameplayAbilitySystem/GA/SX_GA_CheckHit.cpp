@@ -42,7 +42,6 @@ void USX_GA_CheckHit::OnSweepSingleCapsuleResultReady(const FGameplayAbilityTarg
 		UAbilitySystemComponent* SourceASC = GetAbilitySystemComponentFromActorInfo_Ensured();
 		const USX_AS_Character* SourceAttributeSet = SourceASC->GetSet<USX_AS_Character>();
 
-		//FGameplayEffectSpecHandle EffectSpecHandle = MakeOutgoingGameplayEffectSpec(AttackDamageEffect);
 		FGameplayEffectSpecHandle EffectSpecHandle = MakeOutgoingGameplayEffectSpec(AttackDamageEffect, CurrentLevel);
 		if (EffectSpecHandle.IsValid() == true)
 		{
@@ -54,6 +53,20 @@ void USX_GA_CheckHit::OnSweepSingleCapsuleResultReady(const FGameplayAbilityTarg
 		if (BuffEffectSpecHandle.IsValid())
 		{
 			ApplyGameplayEffectSpecToOwner(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, BuffEffectSpecHandle);
+		}
+
+		const FHitResult HitResult = UAbilitySystemBlueprintLibrary::GetHitResultFromTargetData(TargetDataHandle, 0);
+		UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(HitResult.GetActor());
+
+		if (IsValid(TargetASC) == true && EffectSpecHandle.IsValid() == true)
+		{
+			FGameplayEffectContextHandle CueContextHandle = UAbilitySystemBlueprintLibrary::GetEffectContext(EffectSpecHandle);
+			CueContextHandle.AddHitResult(HitResult);
+
+			FGameplayCueParameters CueParam;
+			CueParam.EffectContext = CueContextHandle;
+
+			TargetASC->ExecuteGameplayCue(SXGameplayTags::GameplayCue_Action_Combat_Hit, CueParam);
 		}
 	}
 
