@@ -8,6 +8,7 @@
 #include "SXGASPlayerState.generated.h"
 
 class USX_AS_Character;
+class USX_AS_Grenade;
 
 UCLASS()
 class SHOOTERX_API ASXGASPlayerState 
@@ -28,5 +29,8 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "ASXGASPlayerState|GameplayAbilitySystem")
 	TObjectPtr<USX_AS_Character> AttributeSet;
+
+	UPROPERTY(EditDefaultsOnly, Category = "ASXGASPlayerState|GameplayAbilitySystem")
+	TObjectPtr<USX_AS_Grenade> GrenadeAttributeSet;
 
 };

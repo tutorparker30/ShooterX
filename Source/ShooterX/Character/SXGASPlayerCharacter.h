@@ -18,6 +18,7 @@ class UAbilitySystemComponent;
 class UGameplayAbility;
 class UAnimMontage;
 class USXGASWidgetComponent;
+class USX_AS_Grenade;
 
 /**
  *
@@ -91,6 +92,8 @@ protected:
 
 public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	const USX_AS_Grenade* GetGrenadeAttributeSet() const;
 
 private:
 	void InitializeGASCharacterInfo();
