@@ -86,6 +86,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ASXGASPlayerCharacter|Input")
 	TObjectPtr<UInputAction> JumpAction;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "ASXGASPlayerCharacter|Input")
+	TObjectPtr<UInputAction> ThrowGrenadeAction;
+
 #pragma endregion
 
 #pragma region GAS

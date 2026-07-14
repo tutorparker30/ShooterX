@@ -178,13 +178,13 @@ UAbilitySystemComponent* ASXGASPlayerCharacter::GetAbilitySystemComponent() cons
 		return nullptr;
 	}
 
-	UAbilitySystemComponent* ASC = SXGASPlayerState->GetAbilitySystemComponent();
-	if (IsValid(ASC) == false)
+	UAbilitySystemComponent* CachedASC = SXGASPlayerState->GetAbilitySystemComponent();
+	if (IsValid(CachedASC) == false)
 	{
 		return nullptr;
 	}
 
-	return ASC;
+	return CachedASC;
 }
 
 void ASXGASPlayerCharacter::InitializeGASCharacterInfo()
@@ -195,18 +195,36 @@ void ASXGASPlayerCharacter::InitializeGASCharacterInfo()
 		return;
 	}
 
-	GetAbilitySystemComponent()->InitAbilityActorInfo(SXGASPlayerState, this);
+	UAbilitySystemComponent* CachedASC = GetAbilitySystemComponent();
+	if (IsValid(CachedASC) == false)
+	{
+		return;
+	}
+
+	CachedASC->InitAbilityActorInfo(SXGASPlayerState, this);
 
 	if (HasAuthority() == true)
 	{
 		for (const auto& GrantedAbility : GrantedAbilities)
 		{
+			FGameplayAbilitySpec* ExistingAbilitySpec = CachedASC->FindAbilitySpecFromClass(GrantedAbility);
+			if (ExistingAbilitySpec)
+			{
+				return;
+			}
+
 			FGameplayAbilitySpec GrantedAbilitySpec(GrantedAbility);
 			GetAbilitySystemComponent()->GiveAbility(GrantedAbilitySpec);
 		}
 
 		for (const auto& GrantedInputAbility : GrantedInputAbilities)
 		{
+			FGameplayAbilitySpec* ExistingAbilitySpec = CachedASC->FindAbilitySpecFromClass(GrantedInputAbility.AbilityClass);
+			if (ExistingAbilitySpec)
+			{
+				return;
+			}
+
 			FGameplayAbilitySpec GrantedAbilitySpec(GrantedInputAbility.AbilityClass);
 			GrantedAbilitySpec.GetDynamicSpecSourceTags().AddTag(GrantedInputAbility.InputTag);
 			GetAbilitySystemComponent()->GiveAbility(GrantedAbilitySpec);
@@ -222,7 +240,13 @@ void ASXGASPlayerCharacter::HandleGameplayAbilityInputPressed(FGameplayTag Input
 		return;
 	}
 
-	for (FGameplayAbilitySpec& AbilitySpec : CachedASC->GetActivatableAbilities())
+	TArray<FGameplayAbilitySpec>& ActivatableAbilities = CachedASC->GetActivatableAbilities();
+	if (ActivatableAbilities.IsEmpty() == true)
+	{
+		return;
+	}
+
+	for (FGameplayAbilitySpec& AbilitySpec : ActivatableAbilities)
 	{
 		if (IsValid(AbilitySpec.Ability) == false)
 		{
@@ -252,7 +276,13 @@ void ASXGASPlayerCharacter::HandleGameplayAbilityInputReleased(FGameplayTag Inpu
 		return;
 	}
 
-	for (FGameplayAbilitySpec& AbilitySpec : CachedASC->GetActivatableAbilities())
+	TArray<FGameplayAbilitySpec>& ActivatableAbilities = CachedASC->GetActivatableAbilities();
+	if (ActivatableAbilities.IsEmpty() == true)
+	{
+		return;
+	}
+
+	for (FGameplayAbilitySpec& AbilitySpec : ActivatableAbilities)
 	{
 		if (IsValid(AbilitySpec.Ability) == false)
 		{

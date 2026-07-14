@@ -9,20 +9,24 @@ namespace SXGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_ID_Action_Movement_Rotate);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_ID_Action_Movement_Jumping);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_ID_Action_Combat_PlayingTestMontage);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_ID_Action_Combat_Throw_Grenade);
 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Type_Action_Movement_Rotate);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Type_Action_Movement_Jumping);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Type_Action_Combat_PlayingTestMontage);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_TYPE_Action_Combat_Throw_Grenade);
 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Action_Movement_Rotating);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Action_Movement_Jumping);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Action_Combat_PlayingTestMontage);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Action_Combat_Aiming_Grenade);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Condition_Combat_Dead);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Condition_Combat_Invincible);
 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Test);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Jump);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Play_TestMontage);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Action_Combat_Throw_Grenade);
 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Action_Combat_Melee_CheckHit);
 

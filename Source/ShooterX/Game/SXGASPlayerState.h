@@ -9,6 +9,7 @@
 
 class USX_AS_Character;
 class USX_AS_Grenade;
+class USXAbilitySystemComponent;
 
 UCLASS()
 class SHOOTERX_API ASXGASPlayerState 
@@ -25,7 +26,7 @@ public:
 
 protected:
 	UPROPERTY(EditAnywhere, Category = "ASXGASPlayerState|Component")
-	TObjectPtr<UAbilitySystemComponent> ASC;
+	TObjectPtr<USXAbilitySystemComponent> ASC;
 
 	UPROPERTY(EditDefaultsOnly, Category = "ASXGASPlayerState|GameplayAbilitySystem")
 	TObjectPtr<USX_AS_Character> AttributeSet;
