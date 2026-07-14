@@ -7,6 +7,10 @@
 #include "Abilities/Tasks/AbilityTask_WaitInputRelease.h"
 #include "Animation/AnimMontage.h"
 #include "GameplayAbilitySystem/AS/SX_AS_Grenade.h"
+#include "GameFramework/Character.h"
+#include "Item/SXGASGrenade.h"
+#include "GameplayAbilitySystem/TA/SX_TA_GrenadeTrajectory.h"
+
 
 USX_GA_ThrowGrenade::USX_GA_ThrowGrenade()
 	: AimStartSectionName(TEXT("AimStart"))
@@ -40,7 +44,8 @@ void USX_GA_ThrowGrenade::ActivateAbility(
 		return;
 	}
 
-	if (ValidateMontage() == false)
+	//if (ValidateMontage() == false)
+	if (ValidateMontage() == false || ValidateThrowConfiguration() == false)
 	{
 		UE_LOG(LogTemp, Error, TEXT("[%s] Invalid grenade throw montage " "or montage section."), *GetNameSafe(this));
 
@@ -60,7 +65,6 @@ void USX_GA_ThrowGrenade::ActivateAbility(
 	MontageTask->ReadyForActivation();
 
 	UAbilityTask_WaitInputRelease* InputReleaseTask = UAbilityTask_WaitInputRelease::WaitInputRelease(this, true);
-	// bTestAlreadyReleased = true 로 설정하면, 이미 입력이 해제된 상태라면 즉시 OnRelease 이벤트가 발생함.
 	if (IsValid(InputReleaseTask) == false)
 	{
 		FinishAbility(true);
@@ -68,6 +72,13 @@ void USX_GA_ThrowGrenade::ActivateAbility(
 	}
 	InputReleaseTask->OnRelease.AddDynamic(this, &ThisClass::OnInputReleased);
 	InputReleaseTask->ReadyForActivation();
+
+	if (StartTrajectoryPreview() == false)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[%s] Failed to start " "grenade trajectory preview."), *GetNameSafe(GetAvatarActorFromActorInfo()));
+
+		FinishAbility(true);
+	}
 }
 
 bool USX_GA_ThrowGrenade::ValidateMontage() const
@@ -99,7 +110,7 @@ bool USX_GA_ThrowGrenade::ValidateMontage() const
 
 void USX_GA_ThrowGrenade::OnInputReleased(float InTimeHeld)
 {
-	if (bThrowConfirmed || bFinishRequested)
+	if (bThrowConfirmed || bFinishRequested || IsActive() == false)
 	{
 		return;
 	}
@@ -126,6 +137,10 @@ void USX_GA_ThrowGrenade::OnInputReleased(float InTimeHeld)
 	}
 
 	bThrowConfirmed = true;
+
+	//CachedASC->CurrentMontageJumpToSection(ThrowSectionName);
+
+	StopTrajectoryPreview();
 
 	CachedASC->CurrentMontageJumpToSection(ThrowSectionName);
 }
@@ -211,8 +226,114 @@ bool USX_GA_ThrowGrenade::TryCommitThrow()
 	return true;
 }
 
+bool USX_GA_ThrowGrenade::ValidateThrowConfiguration()
+{
+	// 투척 설정 검사는 로컬 클라와 서버 모두에서 수행됨. 
+	// 따라서 설정이 누락된 상태에서는 실패할 수 있음.
+
+	if (CurrentActorInfo == nullptr || IsValid(GrenadeClass) == false || GrenadeThrowSocketName.IsNone())
+	{
+		return false;
+	}
+
+	ACharacter* AvatarCharacter = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+	if (IsValid(AvatarCharacter) == false || IsValid(AvatarCharacter->GetMesh()) == false)
+	{
+		return false;
+	}
+
+	if (AvatarCharacter->GetMesh()->DoesSocketExist(GrenadeThrowSocketName) == false)
+	{
+		return false;
+	}
+
+	if (CurrentActorInfo->IsLocallyControlled() && IsValid(TrajectoryTargetActorClass) == false)
+	{
+		return false;
+	}
+
+	const ASXGASGrenade* GrenadeCDO = GrenadeClass->GetDefaultObject<ASXGASGrenade>();
+	if (IsValid(GrenadeCDO) == false ||
+		GrenadeCDO->GetGrenadeCollisionRadius() <= 0.0f ||
+		GrenadeCDO->GetGrenadeInitialSpeed() <= 0.0f ||
+		GrenadeCDO->GetGrenadeMaxSpeed() <= 0.0f)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool USX_GA_ThrowGrenade::StartTrajectoryPreview()
+{
+	if (CurrentActorInfo == nullptr)
+	{
+		return false;
+	}
+
+	if (CurrentActorInfo->IsLocallyControlled() == false)
+	{
+		return true;
+			// true를 반환하는 이유는 서버에서는 궤적을 만들지 않는 것이 정상적인 동작이기 때문.
+	}
+
+	if (TrajectoryTargetActor)
+	{
+		return true;
+	}
+
+	UWorld* World = GetWorld();
+	AActor* AvatarActor = GetAvatarActorFromActorInfo();
+	if (IsValid(World) == false ||
+		IsValid(AvatarActor) == false ||
+		IsValid(TrajectoryTargetActorClass) ==false)
+	{
+		return false;
+	}
+
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.Owner = AvatarActor;
+	SpawnParameters.Instigator = Cast<APawn>(AvatarActor);
+	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	ASX_TA_GrenadeTrajectory* SpawnedTargetActor = World->SpawnActor<ASX_TA_GrenadeTrajectory>(
+			TrajectoryTargetActorClass,
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			SpawnParameters);
+
+	if (IsValid(SpawnedTargetActor) == false)
+	{
+		return false;
+	}
+
+	SpawnedTargetActor->ConfigureTrajectory(GrenadeClass, GrenadeThrowSocketName);
+	SpawnedTargetActor->StartTargeting(this);
+	if (SpawnedTargetActor->RefreshTrajectory() == false)
+	{
+		SpawnedTargetActor->Destroy();
+		return false;
+	}
+
+	TrajectoryTargetActor = SpawnedTargetActor;
+
+	return true;
+}
+
+void USX_GA_ThrowGrenade::StopTrajectoryPreview()
+{
+	if (TrajectoryTargetActor)
+	{
+		TrajectoryTargetActor->Destroy();
+	}
+
+	TrajectoryTargetActor = nullptr;
+}
+
 void USX_GA_ThrowGrenade::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
+	StopTrajectoryPreview();
+
 	bThrowConfirmed = false;
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);

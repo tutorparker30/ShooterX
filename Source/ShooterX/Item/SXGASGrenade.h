@@ -30,7 +30,6 @@ class SHOOTERX_API ASXGASGrenade : public AActor
 public:
 	ASXGASGrenade();
 
-public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	ESXGASGrenadeState GetGrenadeState() const
@@ -39,6 +38,14 @@ public:
 	}
 
 	void SetGrenadeState(ESXGASGrenadeState NewGrenadeState);
+
+	float GetGrenadeCollisionRadius() const;
+
+	float GetGrenadeInitialSpeed() const;
+
+	float GetGrenadeGravityScale() const;
+
+	float GetGrenadeMaxSpeed() const;
 
 protected:
 	virtual void BeginPlay() override;

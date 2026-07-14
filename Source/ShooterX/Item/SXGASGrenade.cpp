@@ -81,6 +81,46 @@ void ASXGASGrenade::SetGrenadeState(ESXGASGrenadeState NewGrenadeState)
 	ForceNetUpdate();
 }
 
+float ASXGASGrenade::GetGrenadeCollisionRadius() const
+{
+	if (IsValid(PickupCollision) == false)
+	{
+		return 0.0f;
+	}
+
+	return PickupCollision->GetUnscaledSphereRadius();
+}
+
+float ASXGASGrenade::GetGrenadeInitialSpeed() const
+{
+	if (IsValid(ProjectileMovement) == false)
+	{
+		return 0.0f;
+	}
+
+	return ProjectileMovement->InitialSpeed;
+}
+
+float ASXGASGrenade::GetGrenadeGravityScale() const
+{
+	if (IsValid(ProjectileMovement) == false)
+	{
+		return 0.0f;
+	}
+
+	return ProjectileMovement->ProjectileGravityScale;
+}
+
+float ASXGASGrenade::GetGrenadeMaxSpeed() const
+{
+	if (IsValid(ProjectileMovement) == false)
+	{
+		return 0.0f;
+	}
+
+	return ProjectileMovement->MaxSpeed;
+}
+
 void ASXGASGrenade::OnRep_GrenadeState()
 {
 	ApplyGrenadeState();

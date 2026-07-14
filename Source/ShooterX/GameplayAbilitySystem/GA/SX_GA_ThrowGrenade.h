@@ -7,6 +7,8 @@
 #include "SX_GA_ThrowGrenade.generated.h"
 
 class UAnimMontage;
+class ASXGASGrenade;
+class ASX_TA_GrenadeTrajectory;
 
 /**
  * 입력을 누르는 동안 수류탄 조준 상태를 유지하고,
@@ -21,7 +23,6 @@ class SHOOTERX_API USX_GA_ThrowGrenade
 public:
 	USX_GA_ThrowGrenade();
 
-public:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
@@ -31,9 +32,6 @@ private:
 
 	void FinishAbility(bool bWasCancelled);
 
-	bool TryCommitThrow();
-
-private:
 	UFUNCTION()
 	void OnInputReleased(float InTimeHeld);
 
@@ -45,6 +43,14 @@ private:
 
 	UFUNCTION()
 	void OnMontageCancelled();
+
+	bool TryCommitThrow();
+
+	bool ValidateThrowConfiguration();
+
+	bool StartTrajectoryPreview();
+
+	void StopTrajectoryPreview();
 
 protected:
 	UPROPERTY(EditDefaultsOnly)
@@ -59,11 +65,21 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	FName ThrowSectionName;
 
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<ASXGASGrenade> GrenadeClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	FName GrenadeThrowSocketName;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<ASX_TA_GrenadeTrajectory> TrajectoryTargetActorClass;
+
 private:
 	bool bThrowConfirmed;
-		// 이번 어빌리티 활성에서 우클릭 해제가 정상적으로 수신되었는지
 
 	bool bFinishRequested;
-		// 여러 몽타주 콜백이 연속으로 발생하더라도 EndAbility() 함수가 중복 호출되지 않도록 방지함.
+
+	UPROPERTY(Transient)
+	TObjectPtr<ASX_TA_GrenadeTrajectory> TrajectoryTargetActor;
 
 };
