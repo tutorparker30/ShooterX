@@ -6,6 +6,7 @@
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputRelease.h"
 #include "Animation/AnimMontage.h"
+#include "GameplayAbilitySystem/AS/SX_AS_Grenade.h"
 
 USX_GA_ThrowGrenade::USX_GA_ThrowGrenade()
 	: AimStartSectionName(TEXT("AimStart"))
@@ -108,12 +109,23 @@ void USX_GA_ThrowGrenade::OnInputReleased(float InTimeHeld)
 	UE_LOG(LogTemp, Log, TEXT("[%s] Grenade input released. " "TimeHeld: %.2f"), *GetNameSafe(GetAvatarActorFromActorInfo()), InTimeHeld);
 
 	UAbilitySystemComponent* CachedASC = GetAbilitySystemComponentFromActorInfo();
-
 	if (IsValid(CachedASC) == false)
 	{
 		FinishAbility(true);
 		return;
 	}
+
+	//CachedASC->CurrentMontageJumpToSection(ThrowSectionName);
+
+	UE_LOG(LogTemp, Log, TEXT("[%s] Grenade input released. " "TimeHeld: %.2f"), *GetNameSafe(GetAvatarActorFromActorInfo()), InTimeHeld);
+
+	if (TryCommitThrow() == false)
+	{
+		FinishAbility(true);
+		return;
+	}
+
+	bThrowConfirmed = true;
 
 	CachedASC->CurrentMontageJumpToSection(ThrowSectionName);
 }
@@ -160,6 +172,43 @@ void USX_GA_ThrowGrenade::FinishAbility(bool bWasCancelled)
 	}
 
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, bWasCancelled);
+}
+
+bool USX_GA_ThrowGrenade::TryCommitThrow()
+{
+	if (IsActive() == false || CurrentActorInfo == nullptr)
+	{
+		return false;
+	}
+
+	UAbilitySystemComponent* CachedASC = GetAbilitySystemComponentFromActorInfo();
+
+	if (IsValid(CachedASC) == false)
+	{
+		return false;
+	}
+
+	const USX_AS_Grenade* GrenadeAttributeSet =	CachedASC->GetSet<USX_AS_Grenade>();
+	if (IsValid(GrenadeAttributeSet) == false)
+	{
+		UE_LOG(LogTemp,	Error, TEXT("[%s] Grenade AttributeSet " "is invalid."), *GetNameSafe(GetAvatarActorFromActorInfo()));
+		return false;
+	}
+
+	const float PreviousGrenadeCount = GrenadeAttributeSet->GetCurrentGrenadeCount();
+
+	const bool bCommitSucceeded = CommitAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo);
+	if (bCommitSucceeded == false)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] Failed to commit " "grenade throw ability. " "GrenadeCount: %.0f"), *GetNameSafe(GetAvatarActorFromActorInfo()), PreviousGrenadeCount);
+		return false;
+	}
+
+	const float CurrentGrenadeCount = GrenadeAttributeSet->GetCurrentGrenadeCount();
+
+	UE_LOG(LogTemp, Log, TEXT("[%s] Grenade throw committed. " "GrenadeCount: %.0f -> %.0f"), *GetNameSafe(GetAvatarActorFromActorInfo()),PreviousGrenadeCount,CurrentGrenadeCount);
+
+	return true;
 }
 
 void USX_GA_ThrowGrenade::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)

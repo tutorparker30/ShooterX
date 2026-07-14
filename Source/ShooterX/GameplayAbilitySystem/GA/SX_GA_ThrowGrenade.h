@@ -31,6 +31,8 @@ private:
 
 	void FinishAbility(bool bWasCancelled);
 
+	bool TryCommitThrow();
+
 private:
 	UFUNCTION()
 	void OnInputReleased(float InTimeHeld);

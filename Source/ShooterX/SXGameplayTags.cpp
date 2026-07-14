@@ -20,6 +20,7 @@ namespace SXGameplayTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Action_Combat_Aiming_Grenade, "State.Action.Combat.Aiming.Grenade", "수류탄을 들고 궤적을 조준 중 상태 태그");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Condition_Combat_Dead, "State.Condition.Combat.Dead", "죽음 상태 태그");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Condition_Combat_Invincible, "State.Condition.Combat.Invincible", "무적 상태 태그");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Condition_Cooldown_Grenade, "State.Condition.Cooldown.Grenade", "수류탄 투척 쿨다운 적용 중 상태 태그");
 	
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Test, "InputTag.Test", "테스트 입력 태그");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Jump, "InputTag.Jump", "점프 입력 태그");
