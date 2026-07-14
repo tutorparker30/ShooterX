@@ -42,7 +42,7 @@ void USX_AS_Grenade::PreAttributeChange(const FGameplayAttribute& Attribute, flo
 	{
 		NewValue = FMath::Max(NewValue, 0.0f);
 	}
-	else if (Attribute == GetGrenadeCountAttribute())
+	else if (Attribute == GetCurrentGrenadeCountAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxGrenadeCount());
 	}
@@ -56,15 +56,15 @@ void USX_AS_Grenade::PostGameplayEffectExecute(const FGameplayEffectModCallbackD
 {
 	Super::PostGameplayEffectExecute(Data);
 
-	if (Data.EvaluatedData.Attribute == GetGrenadeCountAttribute())
+	if (Data.EvaluatedData.Attribute == GetCurrentGrenadeCountAttribute())
 	{
-		SetGrenadeCount(FMath::Clamp(GetGrenadeCount(), 0.0f, GetMaxGrenadeCount()));
+		SetCurrentGrenadeCount(FMath::Clamp(GetCurrentGrenadeCount(), 0.0f, GetMaxGrenadeCount()));
 	}
 	else if (Data.EvaluatedData.Attribute == GetMaxGrenadeCountAttribute())
 	{
 		SetMaxGrenadeCount(FMath::Max(GetMaxGrenadeCount(), 0.0f));
 
-		SetGrenadeCount(FMath::Clamp(GetGrenadeCount(), 0.0f, GetMaxGrenadeCount()));
+		SetCurrentGrenadeCount(FMath::Clamp(GetCurrentGrenadeCount(), 0.0f, GetMaxGrenadeCount()));
 	}
 	else if (Data.EvaluatedData.Attribute == GetExplosionRadiusAttribute())
 	{
@@ -86,7 +86,7 @@ void USX_AS_Grenade::OnRep_ExplosionDamage(const FGameplayAttributeData& OldValu
 	GAMEPLAYATTRIBUTE_REPNOTIFY(USX_AS_Grenade, ExplosionDamage, OldValue);
 }
 
-void USX_AS_Grenade::OnRep_GrenadeCount(const FGameplayAttributeData& OldValue)
+void USX_AS_Grenade::OnRep_CurrentGrenadeCount(const FGameplayAttributeData& OldValue)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(USX_AS_Grenade, CurrentGrenadeCount, OldValue);
 }
