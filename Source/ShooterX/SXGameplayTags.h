@@ -10,11 +10,13 @@ namespace SXGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_ID_Action_Movement_Jumping);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_ID_Action_Combat_PlayingTestMontage);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_ID_Action_Combat_Throw_Grenade);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_ID_Action_Combat_CheckHit_Grenade);
 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Type_Action_Movement_Rotate);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Type_Action_Movement_Jumping);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Type_Action_Combat_PlayingTestMontage);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_TYPE_Action_Combat_Throw_Grenade);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_TYPE_Action_Combat_CheckHit_Grenade);
 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Action_Movement_Rotating);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Action_Movement_Jumping);
@@ -30,11 +32,14 @@ namespace SXGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(InputTag_Action_Combat_Throw_Grenade);
 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Action_Combat_Melee_CheckHit);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(Event_Action_Combat_Ranged_CheckHit_Grenade);
 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(SetByCaller_Damage);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(SetByCaller_Damage_Grenade);
 
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Action_Combat_Hit);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Action_Interation_Open);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Action_Combat_Hit_Periodic);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayCue_Action_Combat_Explosion_Grenade);
 
 }

@@ -10,10 +10,18 @@
 #include "GameplayEffect.h"
 #include "Net/UnrealNetwork.h"
 #include "GameplayAbilitySystem/AS/SX_AS_Grenade.h"
+#include "SXGameplayTags.h"
+#include "GameplayAbilitySystem/TargetData/SXGASGrenadeTargetData.h"
 
 ASXGASGrenade::ASXGASGrenade()
 	: GrenadeState(ESXGASGrenadeState::Pickup)
 	, bPickupProcessed(false)
+	, LaunchVelocity(FVector::ZeroVector)
+	, ExplosionRadius(0.0f)
+	, ExplosionDamage(0.0f)
+	, bThrownGrenadeInitialized(false)
+	, bExploded(false)
+	, FuseTime(3.0f)
 {
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -49,6 +57,7 @@ ASXGASGrenade::ASXGASGrenade()
 	ProjectileMovement->Bounciness = 0.35f;
 	ProjectileMovement->Friction = 0.2f;
 	ProjectileMovement->bAutoActivate = false;
+	ProjectileMovement->bInitialVelocityInLocalSpace = false;
 }
 
 void ASXGASGrenade::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -64,6 +73,11 @@ void ASXGASGrenade::BeginPlay()
 	Super::BeginPlay();
 
 	ApplyGrenadeState();
+	
+	if (HasAuthority() && GrenadeState == ESXGASGrenadeState::Thrown)
+	{
+		StartThrownGrenade();
+	}
 }
 
 void ASXGASGrenade::SetGrenadeState(ESXGASGrenadeState NewGrenadeState)
@@ -195,8 +209,7 @@ void ASXGASGrenade::ApplyGrenadeState()
 	}
 }
 
-void ASXGASGrenade::NotifyActorBeginOverlap(
-	AActor* OtherActor)
+void ASXGASGrenade::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorBeginOverlap(OtherActor);
 
@@ -216,6 +229,107 @@ void ASXGASGrenade::NotifyActorBeginOverlap(
 	}
 
 	TryPickupGrenade(OtherActor);
+}
+
+void ASXGASGrenade::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	GetWorldTimerManager().ClearTimer(ExplosionTimerHandle);
+	
+	Super::EndPlay(EndPlayReason);
+}
+
+void ASXGASGrenade::StartThrownGrenade()
+{
+	if (bThrownGrenadeInitialized == false || IsValid(ProjectileMovement) == false)
+	{
+		UE_LOG(LogTemp, Error, TEXT( "[%s] Thrown grenade is not initialized."), *GetNameSafe(this));
+
+		Destroy();
+		return;
+	}
+
+	ProjectileMovement->Velocity = LaunchVelocity;
+	ProjectileMovement->Activate(true);
+
+	GetWorldTimerManager().SetTimer(
+		ExplosionTimerHandle,
+		this,
+		&ThisClass::Explode,
+		FuseTime,
+		false);
+}
+
+void ASXGASGrenade::Explode()
+{
+	if (HasAuthority() == false || bExploded)
+	{
+		return;
+	}
+
+	bExploded = true;
+
+	GetWorldTimerManager().ClearTimer(ExplosionTimerHandle);
+
+	if (IsValid(ProjectileMovement))
+	{
+		ProjectileMovement->StopMovementImmediately();
+		ProjectileMovement->Deactivate();
+	}
+
+	if (IsValid(PickupCollision))
+	{
+		PickupCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	UAbilitySystemComponent* SourceASC = SourceAbilitySystemComponent.Get();
+
+	if (IsValid(SourceASC) == false)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[%s] Source ASC is invalid."), *GetNameSafe(this));
+
+		Destroy();
+		return;
+	}
+
+	const FVector ExplosionLocation = GetActorLocation();
+
+	// 폭발 GameplayCue.
+	FGameplayCueParameters CueParameters;
+	CueParameters.Location = ExplosionLocation;
+	CueParameters.RawMagnitude = ExplosionRadius;
+	CueParameters.Instigator = SourceActor.Get();
+	CueParameters.EffectCauser = this;
+	CueParameters.SourceObject = this;
+	SourceASC->ExecuteGameplayCue(SXGameplayTags::GameplayCue_Action_Combat_Explosion_Grenade, CueParameters);
+
+	// CheckHit 어빌리티에 전달할 폭발 TargetData.
+	auto* ExplosionTargetData =	new FSXGameplayAbilityTargetData_GrenadeExplosion();
+	ExplosionTargetData->ExplosionLocation =	ExplosionLocation;
+	ExplosionTargetData->ExplosionRadius = ExplosionRadius;
+	ExplosionTargetData->ExplosionDamage = ExplosionDamage;
+	
+	FGameplayEventData EventData;
+	EventData.EventTag = SXGameplayTags::Event_Action_Combat_Ranged_CheckHit_Grenade;
+	EventData.Instigator = SourceActor.Get();
+	EventData.Target = SourceActor.Get();
+	EventData.OptionalObject = this;
+	EventData.EventMagnitude = ExplosionDamage;
+	EventData.TargetData.Add(ExplosionTargetData);
+
+	const int32 TriggeredAbilityCount =	SourceASC->HandleGameplayEvent(SXGameplayTags::Event_Action_Combat_Ranged_CheckHit_Grenade, &EventData);
+
+	UE_LOG(LogTemp, Log, TEXT(
+			"[%s] Grenade exploded. "
+			"Radius=%.1f, Damage=%.1f, "
+			"TriggeredAbilities=%d"),
+		*GetNameSafe(this),
+		ExplosionRadius,
+		ExplosionDamage,
+		TriggeredAbilityCount);
+
+	// GameplayCue가 EffectCauser를 참조할 수 있도록
+	// 같은 프레임에 즉시 Destroy하지 않는다.
+	SetLifeSpan(0.25f);
 }
 
 bool ASXGASGrenade::TryPickupGrenade(AActor* OtherActor)
