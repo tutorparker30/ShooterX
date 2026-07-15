@@ -118,38 +118,6 @@ bool USX_GA_ThrowGrenade::ValidateMontage() const
 
 void USX_GA_ThrowGrenade::OnInputReleased(float InTimeHeld)
 {
-	/*
-	if (bThrowConfirmed || bFinishRequested || IsActive() == false)
-	{
-		return;
-	}
-
-	bThrowConfirmed = true;
-
-	UE_LOG(LogTemp, Log, TEXT("[%s] Grenade input released. " "TimeHeld: %.2f"), *GetNameSafe(GetAvatarActorFromActorInfo()), InTimeHeld);
-
-	UAbilitySystemComponent* CachedASC = GetAbilitySystemComponentFromActorInfo();
-	if (IsValid(CachedASC) == false)
-	{
-		FinishAbility(true);
-		return;
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("[%s] Grenade input released. " "TimeHeld: %.2f"), *GetNameSafe(GetAvatarActorFromActorInfo()), InTimeHeld);
-
-	if (TryCommitThrow() == false)
-	{
-		FinishAbility(true);
-		return;
-	}
-
-	bThrowConfirmed = true;
-
-	StopTrajectoryPreview();
-
-	CachedASC->CurrentMontageJumpToSection(ThrowSectionName);
-	*/
-
 	if (bThrowConfirmed ||
 		bThrowTargetDataRequested ||
 		bFinishRequested ||
@@ -160,17 +128,12 @@ void USX_GA_ThrowGrenade::OnInputReleased(float InTimeHeld)
 
 	FSXGASGrenadeThrowData LocalThrowData;
 
-	// 소유 클라이언트와 리슨 서버 호스트만
-	// 현재 궤적 데이터를 가지고 있다.
 	if (CurrentActorInfo != nullptr && CurrentActorInfo->IsLocallyControlled())
 	{
 		if (IsValid(TrajectoryTargetActor) == false ||
 			TrajectoryTargetActor->RefreshTrajectory() == false ||
 			TrajectoryTargetActor->GetCurrentThrowData(LocalThrowData) == false)
 		{
-			// 조건문 안에서 RefreshTrajectory() 함수를 호출하여
-			// 마지막 프레임에 움직인 카메라 방향을 실제 투척 데이터에도 반영.
-
 			FinishAbility(true);
 			return;
 		}
@@ -202,9 +165,6 @@ void USX_GA_ThrowGrenade::OnMontageCompleted()
 		FinishAbility(true);
 		return;
 	}
-		// 정상적인 흐름에서는 AimLoop 섹션의 애님시퀀스가 반복되므로,
-		// 입력 해제 전까지는 몽타주가 끝나지 않음. OnMontageCompleted() 함수 호출 안됨.
-		// 만약 입력 해제 전에 OnMontageCompleted() 함수가 호출되었다면 어빌리티 취소함.
 
 	FinishAbility(false);
 }
