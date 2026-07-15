@@ -9,7 +9,6 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "GameplayEffect.h"
 #include "Net/UnrealNetwork.h"
-
 #include "GameplayAbilitySystem/AS/SX_AS_Grenade.h"
 
 ASXGASGrenade::ASXGASGrenade()
@@ -119,6 +118,38 @@ float ASXGASGrenade::GetGrenadeMaxSpeed() const
 	}
 
 	return ProjectileMovement->MaxSpeed;
+}
+
+bool ASXGASGrenade::InitializeThrownGrenade(UAbilitySystemComponent* InSourceAbilitySystemComponent, AActor* InSourceActor, const FVector& InLaunchVelocity, float InExplosionRadius, float InExplosionDamage)
+{
+	if (HasAuthority() == false ||
+		IsValid(InSourceAbilitySystemComponent) == false ||
+		IsValid(InSourceActor) == false ||
+		InLaunchVelocity.ContainsNaN() ||
+		InLaunchVelocity.IsNearlyZero() ||
+		FMath::IsFinite(InExplosionRadius) == false ||
+		FMath::IsFinite(InExplosionDamage) == false ||
+		InExplosionRadius <= 0.0f ||
+		InExplosionDamage < 0.0f)
+	{
+		return false;
+	}
+
+	GrenadeState = ESXGASGrenadeState::Thrown;
+
+	SourceAbilitySystemComponent = InSourceAbilitySystemComponent;
+
+	SourceActor = InSourceActor;
+
+	LaunchVelocity = InLaunchVelocity;
+
+	ExplosionRadius = InExplosionRadius;
+
+	ExplosionDamage = InExplosionDamage;
+
+	bThrownGrenadeInitialized = true;
+
+	return true;
 }
 
 void ASXGASGrenade::OnRep_GrenadeState()

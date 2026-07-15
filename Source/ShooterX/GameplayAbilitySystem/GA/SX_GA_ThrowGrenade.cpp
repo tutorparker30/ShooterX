@@ -10,6 +10,10 @@
 #include "GameFramework/Character.h"
 #include "Item/SXGASGrenade.h"
 #include "GameplayAbilitySystem/TA/SX_TA_GrenadeTrajectory.h"
+#include "GameplayAbilitySystem/AT/SX_AT_SendGrenadeTargetData.h"
+#include "GameplayAbilitySystem/TargetData/SXGASGrenadeTargetData.h"
+#include "Engine/World.h"
+#include "Kismet/GameplayStatics.h"
 
 
 USX_GA_ThrowGrenade::USX_GA_ThrowGrenade()
@@ -18,6 +22,10 @@ USX_GA_ThrowGrenade::USX_GA_ThrowGrenade()
 	, ThrowSectionName(TEXT("Throw"))
 	, bThrowConfirmed(false)
 	, bFinishRequested(false)
+	, MaxStartLocationError(150.0f)
+	, LaunchSpeedTolerance(150.0f)
+	, MinimumAimDirectionDot(-0.2f)
+	, bThrowTargetDataRequested(false)
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
@@ -110,6 +118,7 @@ bool USX_GA_ThrowGrenade::ValidateMontage() const
 
 void USX_GA_ThrowGrenade::OnInputReleased(float InTimeHeld)
 {
+	/*
 	if (bThrowConfirmed || bFinishRequested || IsActive() == false)
 	{
 		return;
@@ -126,8 +135,6 @@ void USX_GA_ThrowGrenade::OnInputReleased(float InTimeHeld)
 		return;
 	}
 
-	//CachedASC->CurrentMontageJumpToSection(ThrowSectionName);
-
 	UE_LOG(LogTemp, Log, TEXT("[%s] Grenade input released. " "TimeHeld: %.2f"), *GetNameSafe(GetAvatarActorFromActorInfo()), InTimeHeld);
 
 	if (TryCommitThrow() == false)
@@ -138,11 +145,52 @@ void USX_GA_ThrowGrenade::OnInputReleased(float InTimeHeld)
 
 	bThrowConfirmed = true;
 
-	//CachedASC->CurrentMontageJumpToSection(ThrowSectionName);
-
 	StopTrajectoryPreview();
 
 	CachedASC->CurrentMontageJumpToSection(ThrowSectionName);
+	*/
+
+	if (bThrowConfirmed ||
+		bThrowTargetDataRequested ||
+		bFinishRequested ||
+		IsActive() == false)
+	{
+		return;
+	}
+
+	FSXGASGrenadeThrowData LocalThrowData;
+
+	// 소유 클라이언트와 리슨 서버 호스트만
+	// 현재 궤적 데이터를 가지고 있다.
+	if (CurrentActorInfo != nullptr && CurrentActorInfo->IsLocallyControlled())
+	{
+		if (IsValid(TrajectoryTargetActor) == false ||
+			TrajectoryTargetActor->RefreshTrajectory() == false ||
+			TrajectoryTargetActor->GetCurrentThrowData(LocalThrowData) == false)
+		{
+			// 조건문 안에서 RefreshTrajectory() 함수를 호출하여
+			// 마지막 프레임에 움직인 카메라 방향을 실제 투척 데이터에도 반영.
+
+			FinishAbility(true);
+			return;
+		}
+	}
+
+	bThrowTargetDataRequested = true;
+
+	USX_AT_SendGrenadeTargetData* TargetDataTask = USX_AT_SendGrenadeTargetData::SendGrenadeTargetData(
+			this,
+			TEXT("SendGrenadeTargetData"),
+			LocalThrowData);
+	if (IsValid(TargetDataTask) == false)
+	{
+		FinishAbility(true);
+		return;
+	}
+
+	TargetDataTask->ValidData.AddDynamic(this, &ThisClass::OnThrowTargetDataReady);
+	TargetDataTask->Cancelled.AddDynamic(this, &ThisClass::OnThrowTargetDataCancelled);
+	TargetDataTask->ReadyForActivation();
 }
 
 void USX_GA_ThrowGrenade::OnMontageCompleted()
@@ -228,9 +276,6 @@ bool USX_GA_ThrowGrenade::TryCommitThrow()
 
 bool USX_GA_ThrowGrenade::ValidateThrowConfiguration()
 {
-	// 투척 설정 검사는 로컬 클라와 서버 모두에서 수행됨. 
-	// 따라서 설정이 누락된 상태에서는 실패할 수 있음.
-
 	if (CurrentActorInfo == nullptr || IsValid(GrenadeClass) == false || GrenadeThrowSocketName.IsNone())
 	{
 		return false;
@@ -257,6 +302,12 @@ bool USX_GA_ThrowGrenade::ValidateThrowConfiguration()
 		GrenadeCDO->GetGrenadeCollisionRadius() <= 0.0f ||
 		GrenadeCDO->GetGrenadeInitialSpeed() <= 0.0f ||
 		GrenadeCDO->GetGrenadeMaxSpeed() <= 0.0f)
+	{
+		return false;
+	}
+
+	const ASX_TA_GrenadeTrajectory* TrajectoryCDO = TrajectoryTargetActorClass->GetDefaultObject<ASX_TA_GrenadeTrajectory>();
+	if (IsValid(TrajectoryCDO) == false)
 	{
 		return false;
 	}
@@ -330,11 +381,206 @@ void USX_GA_ThrowGrenade::StopTrajectoryPreview()
 	TrajectoryTargetActor = nullptr;
 }
 
+bool USX_GA_ThrowGrenade::ValidateAndSanitizeThrowTargetData(const FGameplayAbilityTargetDataHandle& TargetDataHandle, FSXGASGrenadeThrowData& OutSanitizedThrowData) const
+{
+	OutSanitizedThrowData = FSXGASGrenadeThrowData();
+
+	if (TargetDataHandle.Num() != 1 || CurrentActorInfo == nullptr)
+	{
+		return false;
+	}
+
+	const FGameplayAbilityTargetData* RawTargetData = TargetDataHandle.Get(0);
+
+	if (RawTargetData == nullptr ||
+		RawTargetData->GetScriptStruct() !=
+		FSXGameplayAbilityTargetData_GrenadeThrow::
+		StaticStruct())
+	{
+		return false;
+	}
+
+	const auto* GrenadeTargetData =	static_cast<const FSXGameplayAbilityTargetData_GrenadeThrow*>(RawTargetData);
+	if (GrenadeTargetData->IsValidData() == false)
+	{
+		return false;
+	}
+
+	ACharacter* AvatarCharacter = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+	if (IsValid(AvatarCharacter) == false || IsValid(AvatarCharacter->GetMesh()) == false)
+	{
+		return false;
+	}
+
+	const ASXGASGrenade* GrenadeCDO = GrenadeClass->GetDefaultObject<ASXGASGrenade>();
+	const ASX_TA_GrenadeTrajectory* TrajectoryCDO = TrajectoryTargetActorClass->GetDefaultObject<ASX_TA_GrenadeTrajectory>();
+	UWorld* World = GetWorld();
+	if (IsValid(GrenadeCDO) == false || IsValid(TrajectoryCDO) == false || IsValid(World) == false)
+	{
+		return false;
+	}
+
+	const FVector ClientStartLocation = GrenadeTargetData->StartLocation;
+	const FVector ClientLaunchVelocity = GrenadeTargetData->LaunchVelocity;
+	const float ClientLaunchSpeed = ClientLaunchVelocity.Size();
+	const float ExpectedLaunchSpeed = GrenadeCDO->GetGrenadeInitialSpeed();
+	if (LaunchSpeedTolerance < FMath::Abs(ClientLaunchSpeed -ExpectedLaunchSpeed))
+	{
+		return false;
+	}
+
+	const FVector ThrowDirection = ClientLaunchVelocity.GetSafeNormal();
+	if (ThrowDirection.IsNearlyZero())
+	{
+		return false;
+	}
+
+	AController* Controller = AvatarCharacter->GetController();
+	if (IsValid(Controller))
+	{
+		const FVector ControlDirection = Controller->GetControlRotation().Vector().GetSafeNormal();
+		const float AimDirectionDot = FVector::DotProduct(ControlDirection,	ThrowDirection);
+		if (AimDirectionDot < MinimumAimDirectionDot)
+		{
+			return false;
+		}
+	}
+
+	const FVector SocketLocation = AvatarCharacter->GetMesh()->GetSocketLocation(GrenadeThrowSocketName);
+	const FVector AuthoritativeStartLocation = SocketLocation + ThrowDirection * TrajectoryCDO->GetStartForwardOffset();
+	const float StartLocationError = FVector::Distance(ClientStartLocation,	AuthoritativeStartLocation);
+	if (MaxStartLocationError < StartLocationError)
+	{
+		return false;
+	}
+
+	OutSanitizedThrowData.StartLocation = AuthoritativeStartLocation;
+	OutSanitizedThrowData.LaunchVelocity = ThrowDirection * ExpectedLaunchSpeed;
+	OutSanitizedThrowData.GravityZ = World->GetGravityZ() * GrenadeCDO->GetGrenadeGravityScale();
+	OutSanitizedThrowData.AimPoint = AuthoritativeStartLocation + ThrowDirection * 1000.0f;
+
+	return OutSanitizedThrowData.IsValid();
+}
+
+ASXGASGrenade* USX_GA_ThrowGrenade::BeginDeferredGrenadeSpawn(const FSXGASGrenadeThrowData& ThrowData) const
+{
+	if (CurrentActorInfo == nullptr ||
+		CurrentActorInfo->IsNetAuthority() == false ||
+		ThrowData.IsValid() == false)
+	{
+		return nullptr;
+	}
+
+	UWorld* World = GetWorld();
+	AActor* AvatarActor = GetAvatarActorFromActorInfo();
+	if (IsValid(World) == false ||
+		IsValid(AvatarActor) == false ||
+		IsValid(GrenadeClass) == false)
+	{
+		return nullptr;
+	}
+
+	const FTransform SpawnTransform(ThrowData.LaunchVelocity.Rotation(), ThrowData.StartLocation);
+
+	return World->SpawnActorDeferred<ASXGASGrenade>(
+		GrenadeClass,
+		SpawnTransform,
+		AvatarActor,
+		Cast<APawn>(AvatarActor),
+		ESpawnActorCollisionHandlingMethod::
+		AlwaysSpawn);
+}
+
+void USX_GA_ThrowGrenade::OnThrowTargetDataReady(FGameplayAbilityTargetDataHandle TargetDataHandle)
+{
+	if (bThrowConfirmed || bFinishRequested || IsActive() == false)
+	{
+		return;
+	}
+
+	FSXGASGrenadeThrowData SanitizedThrowData;
+	if (ValidateAndSanitizeThrowTargetData(TargetDataHandle, SanitizedThrowData) == false)
+	{
+		FinishAbility(true);
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	if (IsValid(ASC) == false)
+	{
+		FinishAbility(true);
+		return;
+	}
+
+	ASXGASGrenade* DeferredGrenade = nullptr;
+
+	if (CurrentActorInfo->IsNetAuthority())
+	{
+		DeferredGrenade = BeginDeferredGrenadeSpawn(SanitizedThrowData);
+		if (IsValid(DeferredGrenade) == false)
+		{
+			FinishAbility(true);
+			return;
+		}
+
+		const USX_AS_Grenade* GrenadeAS = ASC->GetSet<USX_AS_Grenade>();
+		if (IsValid(GrenadeAS) == false || DeferredGrenade->InitializeThrownGrenade(
+				ASC,
+				GetAvatarActorFromActorInfo(),
+				SanitizedThrowData.LaunchVelocity,
+				GrenadeAS->GetExplosionRadius(),
+				GrenadeAS->GetExplosionDamage())== false)
+		{
+			DeferredGrenade->Destroy();
+			FinishAbility(true);
+			return;
+		}
+	}
+
+	// 스폰에 필요한 정보와 Deferred Actor 준비가
+	// 끝난 뒤에 비용과 쿨다운을 Commit한다.
+	if (TryCommitThrow() == false)
+	{
+		if (IsValid(DeferredGrenade))
+		{
+			DeferredGrenade->Destroy();
+		}
+
+		FinishAbility(true);
+		return;
+	}
+
+	if (IsValid(DeferredGrenade))
+	{
+		const FTransform SpawnTransform(SanitizedThrowData.LaunchVelocity.Rotation(), SanitizedThrowData.StartLocation);
+		AActor* FinishedActor = UGameplayStatics::FinishSpawningActor(DeferredGrenade, SpawnTransform);
+		if (IsValid(FinishedActor) == false)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to finish spawning grenade."));
+
+			FinishAbility(true);
+			return;
+		}
+	}
+
+	bThrowConfirmed = true;
+
+	StopTrajectoryPreview();
+
+	ASC->CurrentMontageJumpToSection(ThrowSectionName);
+}
+
+void USX_GA_ThrowGrenade::OnThrowTargetDataCancelled(FGameplayAbilityTargetDataHandle TargetDataHandle)
+{
+	FinishAbility(true);
+}
+
 void USX_GA_ThrowGrenade::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
 	StopTrajectoryPreview();
 
 	bThrowConfirmed = false;
+	bThrowTargetDataRequested = false;
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

@@ -29,7 +29,6 @@ class SHOOTERX_API ASX_TA_GrenadeTrajectory
 public:
 	ASX_TA_GrenadeTrajectory();
 
-public:
 	virtual void Tick(float DeltaSeconds) override;
 
 	virtual void StartTargeting(UGameplayAbility* Ability) override;
@@ -39,6 +38,11 @@ public:
 	bool RefreshTrajectory();
 
 	bool GetCurrentThrowData(FSXGASGrenadeThrowData& OutThrowData) const;
+
+	float GetStartForwardOffset() const
+	{
+		return StartForwardOffset;
+	}
 
 private:
 	void UpdateSpline(const FPredictProjectilePathResult& PathResult);

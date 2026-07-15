@@ -10,6 +10,7 @@ class UGameplayEffect;
 class UProjectileMovementComponent;
 class USphereComponent;
 class UStaticMeshComponent;
+class UAbilitySystemComponent;
 
 UENUM(BlueprintType)
 enum class ESXGASGrenadeState : uint8
@@ -47,6 +48,14 @@ public:
 
 	float GetGrenadeMaxSpeed() const;
 
+	bool InitializeThrownGrenade(
+		UAbilitySystemComponent*
+		InSourceAbilitySystemComponent,
+		AActor* InSourceActor,
+		const FVector& InLaunchVelocity,
+		float InExplosionRadius,
+		float InExplosionDamage);
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -80,5 +89,19 @@ protected:
 
 private:
 	bool bPickupProcessed;
+
+	UPROPERTY(Transient)
+	TWeakObjectPtr<UAbilitySystemComponent> SourceAbilitySystemComponent;
+
+	UPROPERTY(Transient)
+	TWeakObjectPtr<AActor> SourceActor;
+
+	FVector LaunchVelocity;
+
+	float ExplosionRadius;
+
+	float ExplosionDamage;
+
+	bool bThrownGrenadeInitialized;
 
 };

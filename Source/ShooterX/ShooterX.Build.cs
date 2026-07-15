@@ -34,6 +34,9 @@ public class ShooterX : ModuleRules
 				// GameplayAbilitySystem
 				"GameplayAbilities", "GameplayTags",
 
+				// Networking
+				"NetCore",
+
 			}
 		);
 

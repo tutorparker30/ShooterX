@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
+#include "Item/SXGASGrenadeTypes.h"
 #include "SX_GA_ThrowGrenade.generated.h"
 
 class UAnimMontage;
@@ -52,6 +53,20 @@ private:
 
 	void StopTrajectoryPreview();
 
+	bool ValidateAndSanitizeThrowTargetData(
+		const FGameplayAbilityTargetDataHandle&
+		TargetDataHandle,
+		FSXGASGrenadeThrowData&
+		OutSanitizedThrowData) const;
+
+	ASXGASGrenade* BeginDeferredGrenadeSpawn(const FSXGASGrenadeThrowData& ThrowData) const;
+
+	UFUNCTION()
+	void OnThrowTargetDataReady(FGameplayAbilityTargetDataHandle TargetDataHandle);
+
+	UFUNCTION()
+	void OnThrowTargetDataCancelled(FGameplayAbilityTargetDataHandle TargetDataHandle);
+
 protected:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UAnimMontage> GrenadeThrowMontage;
@@ -74,6 +89,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<ASX_TA_GrenadeTrajectory> TrajectoryTargetActorClass;
 
+	UPROPERTY(EditDefaultsOnly, Meta = (ClampMin = "0.0"))
+	float MaxStartLocationError;
+
+	UPROPERTY(EditDefaultsOnly, Meta = (ClampMin = "0.0"))
+	float LaunchSpeedTolerance;
+
+	UPROPERTY(EditDefaultsOnly, Meta = (ClampMin = "-1.0", ClampMax = "1.0"))
+	float MinimumAimDirectionDot;
+
 private:
 	bool bThrowConfirmed;
 
@@ -81,5 +105,7 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<ASX_TA_GrenadeTrajectory> TrajectoryTargetActor;
+
+	bool bThrowTargetDataRequested;
 
 };
